@@ -1,0 +1,2210 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="نجومي">
+<meta name="theme-color" content="#1B1B2F">
+<title>نجومي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1B1B2F;
+    --surface: #242442;
+    --surface-2: #2E2E54;
+    --line: #38385E;
+    --text: #F5F3EE;
+    --text-muted: #A6A6C4;
+    --morning: #F2A65A;
+    --morning-dim: #4A3B2C;
+    --evening: #8B85E0;
+    --evening-dim: #322F52;
+    --task: #5EC9B3;
+    --task-dim: #223F3A;
+    --home: #8FB88A;
+    --home-dim: #26362A;
+    --daily: #E8C468;
+    --daily-dim: #3A331F;
+    --stamp: #6FA8DC;
+    --stamp-dim: #223447;
+    --weight: #D98BB8;
+    --weight-dim: #3A2432;
+    --profit: #D4A017;
+    --profit-dim: #3A2F10;
+    --thmar: #4FB0A6;
+    --thmar-dim: #163531;
+    --danger: #E0708A;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    min-height: 100vh;
+    display:flex;
+    justify-content:center;
+  }
+  .app{
+    width:100%;
+    max-width: 460px;
+    padding: 28px 20px 48px;
+  }
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom: 18px;
+  }
+  header h1{
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.2px;
+  }
+  header .date{
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* top-level tabs */
+  .tabs{
+    display:flex;
+    gap: 20px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 26px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab{
+    background:none;
+    border:none;
+    font-family: inherit;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0 2px 12px;
+    cursor:pointer;
+    position:relative;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .tab.active{ color: var(--text); }
+  .tab.active::after{
+    content:"";
+    position:absolute;
+    right:0; left:0; bottom:-1px;
+    height: 2px;
+    background: var(--text);
+  }
+
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  /* ---- commute tab ---- */
+  .pills{
+    display:flex;
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 4px;
+    gap: 4px;
+    margin-bottom: 28px;
+  }
+  .pill{
+    flex:1;
+    border:none;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 6px;
+    border-radius: 999px;
+    cursor:pointer;
+    transition: background .2s ease, color .2s ease;
+  }
+  .pill.active[data-dir="toWork"]{ background: var(--morning-dim); color: var(--morning); }
+  .pill.active[data-dir="toHome"]{ background: var(--evening-dim); color: var(--evening); }
+  .pill:disabled{ cursor:default; }
+
+  .timer-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    margin-bottom: 30px;
+  }
+  .ring-btn{
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    background: var(--surface);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    font-family: inherit;
+    color: var(--text);
+    transition: border-color .25s ease, background .25s ease;
+  }
+  .ring-btn.running[data-dir="toWork"]{ border-color: var(--morning); background: var(--morning-dim); }
+  .ring-btn.running[data-dir="toHome"]{ border-color: var(--evening); background: var(--evening-dim); }
+
+  .ring-time{
+    font-size: 40px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+  }
+  .ring-label{
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+  .ring-btn.running .ring-label{ color: inherit; }
+
+  .cancel-link{
+    margin-top: 14px;
+    background:none;
+    border:none;
+    color: var(--danger);
+    font-family: inherit;
+    font-size: 13px;
+    cursor:pointer;
+    padding: 6px;
+  }
+  .cancel-link[hidden]{ display:none; }
+
+  .section-title{
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+  }
+
+  .stats{
+    display:flex;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 26px;
+  }
+  .stat{
+    flex:1;
+    text-align:center;
+    padding: 14px 8px;
+  }
+  .stat:first-child{ border-left: 1px solid var(--line); }
+  .stat .num{
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+  }
+  .stat[data-dir="toWork"] .num{ color: var(--morning); }
+  .stat[data-dir="toHome"] .num{ color: var(--evening); }
+  .stat .label{
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .history{ list-style:none; margin:0; padding:0; }
+  .history li{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .history li:last-child{ border-bottom: none; }
+  .h-left{ display:flex; align-items:center; gap: 10px; }
+  .h-dot{
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink:0;
+  }
+  .h-dot[data-dir="toWork"]{ background: var(--morning); }
+  .h-dot[data-dir="toHome"]{ background: var(--evening); }
+  .h-text .h-dir{ font-size: 14px; }
+  .h-text .h-date{ font-size: 12px; color: var(--text-muted); }
+  .h-right{ display:flex; align-items:center; gap: 10px; }
+  .h-dur{ font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; direction: ltr; }
+  .h-del{
+    border:none; background:none; color: var(--text-muted);
+    font-size: 16px; cursor:pointer; padding: 4px 6px; line-height:1;
+  }
+  .h-del:hover{ color: var(--danger); }
+
+  .empty{
+    color: var(--text-muted);
+    font-size: 14px;
+    padding: 18px 0;
+    text-align:center;
+  }
+
+  /* ---- tasks tab ---- */
+  .add-task{
+    display:flex;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+  .add-task input{
+    flex:1;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 12px 14px;
+  }
+  .add-task input::placeholder{ color: var(--text-muted); }
+  .add-task input:focus{ outline: none; border-color: var(--task); }
+  .add-task button{
+    background: var(--task);
+    color: #10231F;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 0 18px;
+    cursor:pointer;
+  }
+
+  .task-list{ list-style:none; margin:0; padding:0; }
+  .task{
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    background: var(--surface);
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .task.running{ border-color: var(--task); background: var(--task-dim); }
+  .task.done{ opacity: 0.72; }
+
+  .task-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 10px;
+  }
+  .task-title{
+    font-size: 15px;
+    font-weight: 600;
+    flex:1;
+  }
+  .task.done .task-title{ text-decoration: line-through; text-decoration-color: var(--text-muted); }
+  .task-del{
+    border:none; background:none; color: var(--text-muted);
+    font-size: 16px; cursor:pointer; padding: 0 2px; line-height:1;
+    flex-shrink:0;
+  }
+  .task-del:hover{ color: var(--danger); }
+
+  .task-meta{
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display:flex;
+    align-items:center;
+    gap: 6px;
+  }
+  .pulse-dot{
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--task);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.8); }
+  }
+  .task-duration{ font-variant-numeric: tabular-nums; direction: ltr; color: var(--task); font-weight: 600; }
+
+  .task-answer{
+    width: 100%;
+    margin-top: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 10px 12px;
+    resize: vertical;
+    min-height: 44px;
+  }
+  .task-answer::placeholder{ color: var(--text-muted); }
+  .task-answer:focus{ outline: none; border-color: var(--task); }
+
+  .task-actions{
+    margin-top: 12px;
+    display:flex;
+    justify-content:flex-end;
+  }
+  .task-btn{
+    border: none;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    cursor:pointer;
+  }
+  .task-btn.start{ background: var(--surface-2); color: var(--text); }
+  .task-btn.finish{ background: var(--task); color: #10231F; }
+  .task-btn.done-badge{ background:none; color: var(--text-muted); cursor:default; padding: 8px 0; }
+
+  /* ---- home & life tab ---- */
+  .home-section{ margin-bottom: 32px; }
+  .home-section-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom: 12px;
+  }
+  .home-section-head .section-title{ margin: 0; }
+  .home-section-head .hint{ font-size: 12px; color: var(--text-muted); }
+
+  .week-list{ list-style:none; margin:0 0 14px; padding:0; }
+  .week-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .week-row:last-child{ border-bottom:none; }
+  .week-row-left{ display:flex; flex-direction:column; gap: 2px; }
+  .week-row-title{ font-size: 14px; }
+  .week-row.complete .week-row-title{ color: var(--text-muted); }
+  .week-row-note{ font-size: 11px; color: var(--text-muted); }
+
+  .week-check{
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    background: transparent;
+    color: transparent;
+    cursor:pointer;
+    flex-shrink:0;
+    font-size: 14px;
+    line-height:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .week-check.complete{ border-color: var(--home); background: var(--home); color: #16241A; }
+
+  .week-count{
+    min-width: 44px;
+    height: 26px;
+    border-radius: 999px;
+    border: 2px solid var(--line);
+    background: transparent;
+    color: var(--text-muted);
+    cursor:pointer;
+    flex-shrink:0;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: inherit;
+    direction: ltr;
+  }
+  .week-count.complete{ border-color: var(--home); background: var(--home-dim); color: var(--home); }
+
+  .add-week-task{
+    display:flex;
+    gap: 8px;
+  }
+  .add-week-task input[type="text"]{
+    flex:1;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 12px 14px;
+  }
+  .add-week-task input[type="number"]{
+    width: 56px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 12px 8px;
+    text-align:center;
+  }
+  .add-week-task input::placeholder{ color: var(--text-muted); }
+  .add-week-task input:focus{ outline:none; border-color: var(--home); }
+  .add-week-task button{
+    background: var(--home);
+    color: #16241A;
+    border:none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 0 16px;
+    cursor:pointer;
+  }
+
+  .day-list{ list-style:none; margin:0 0 14px; padding:0; }
+  .day-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .day-row:last-child{ border-bottom:none; }
+  .day-check{
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--line);
+    background: transparent;
+    color: transparent;
+    cursor:pointer;
+    flex-shrink:0;
+    font-size: 13px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .day-check.done{ border-color: var(--daily); background: var(--daily); color: #33291A; }
+  .day-title{ flex:1; font-size: 14px; }
+  .day-row.done .day-title{ text-decoration: line-through; text-decoration-color: var(--text-muted); color: var(--text-muted); }
+  .day-del{
+    border:none; background:none; color: var(--text-muted);
+    font-size: 16px; cursor:pointer; padding: 4px 6px; line-height:1;
+  }
+  .day-del:hover{ color: var(--danger); }
+
+  .add-day-task{
+    display:flex;
+    gap: 8px;
+  }
+  .add-day-task input{
+    flex:1;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 12px 14px;
+  }
+  .add-day-task input::placeholder{ color: var(--text-muted); }
+  .add-day-task input:focus{ outline:none; border-color: var(--daily); }
+  .add-day-task button{
+    background: var(--daily);
+    color: #33291A;
+    border:none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 0 16px;
+    cursor:pointer;
+  }
+
+  /* ---- attendance stamp tab ---- */
+  .stamp-card{
+    text-align:center;
+    padding: 30px 20px;
+    border: 2px solid var(--line);
+    border-radius: 20px;
+    background: var(--surface);
+    margin-bottom: 22px;
+    transition: border-color .25s ease, background .25s ease;
+  }
+  .stamp-card.active{ border-color: var(--stamp); background: var(--stamp-dim); }
+  .stamp-btn{
+    width: 150px; height: 150px;
+    border-radius: 50%;
+    border: none;
+    background: var(--stamp);
+    color: #10202F;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor:pointer;
+    margin-bottom: 6px;
+  }
+  .stamp-btn.done{ background: var(--surface-2); color: var(--text-muted); }
+  .stamp-info{ font-size: 13px; color: var(--text-muted); margin-top: 10px; line-height: 1.9; }
+  .stamp-info b{ color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr; display:inline-block; }
+  .stamp-reset{
+    margin-top: 12px;
+    background:none;
+    border:none;
+    color: var(--danger);
+    font-family: inherit;
+    font-size: 12px;
+    cursor:pointer;
+  }
+  .stamp-note{
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.9;
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+    margin-bottom: 22px;
+  }
+  .stamp-history{ list-style:none; margin:0; padding:0; }
+  .stamp-history li{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .stamp-history li:last-child{ border-bottom:none; }
+  .stamp-history .sh-date{ color: var(--text-muted); }
+  .stamp-history .sh-times{ font-variant-numeric: tabular-nums; direction: ltr; }
+
+  /* ---- weight tracking tab ---- */
+  .weight-hero{
+    text-align:center;
+    padding: 26px 20px;
+    border: 2px solid var(--weight);
+    background: var(--weight-dim);
+    border-radius: 20px;
+    margin-bottom: 22px;
+  }
+  .weight-hero .w-current{
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--weight);
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+  }
+  .weight-hero .w-unit{ font-size: 16px; font-weight: 500; color: var(--text-muted); margin-inline-start: 4px; }
+  .weight-hero .w-sub{ font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .weight-hero .w-grid{
+    display:flex;
+    margin-top: 18px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    padding-top: 14px;
+  }
+  .weight-hero .w-grid .w-item{ flex:1; }
+  .weight-hero .w-grid .w-item .w-num{
+    font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr;
+  }
+  .weight-hero .w-grid .w-item .w-label{ font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .add-weight{
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 26px;
+  }
+  .add-weight-row{
+    display:flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .add-weight-row:last-child{ margin-bottom: 0; }
+  .add-weight input{
+    flex:1;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 11px 12px;
+  }
+  .add-weight input::placeholder{ color: var(--text-muted); }
+  .add-weight input:focus{ outline:none; border-color: var(--weight); }
+  .add-weight label{
+    font-size: 11px;
+    color: var(--text-muted);
+    display:block;
+    margin-bottom: 4px;
+  }
+  .add-weight-field{ flex:1; }
+  .add-weight button{
+    width: 100%;
+    background: var(--weight);
+    color: #2E1524;
+    border:none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 11px;
+    cursor:pointer;
+    margin-top: 4px;
+  }
+
+  .weight-list{ list-style:none; margin:0; padding:0; }
+  .weight-entry{
+    border-bottom: 1px solid var(--line);
+    padding: 14px 0;
+  }
+  .weight-entry:last-child{ border-bottom:none; }
+  .we-top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom: 6px;
+  }
+  .we-date{ font-size: 13px; color: var(--text-muted); }
+  .we-weight{ font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr; }
+  .we-badges{ display:flex; gap: 6px; flex-wrap:wrap; margin-bottom: 8px; }
+  .we-badge{
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+  }
+  .we-stats{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .we-stats b{ color: var(--text); font-variant-numeric: tabular-nums; direction: ltr; font-weight: 600; }
+  .we-note{
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .we-del{
+    border:none; background:none; color: var(--text-muted);
+    font-size: 15px; cursor:pointer; padding: 2px 6px; line-height:1;
+  }
+  .we-del:hover{ color: var(--danger); }
+
+  /* ---- profits tab ---- */
+  .profit-section{ margin-bottom: 30px; }
+  .profit-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom: 12px;
+  }
+  .profit-head .section-title{ margin:0; }
+  .profit-summary{
+    display:flex;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow:hidden;
+    margin-bottom: 14px;
+  }
+  .profit-summary .ps-item{
+    flex:1;
+    text-align:center;
+    padding: 14px 8px;
+  }
+  .profit-summary .ps-item + .ps-item{ border-right: 1px solid var(--line); }
+  .profit-summary .ps-total .ps-num{ color: var(--profit); }
+  .profit-summary .ps-num{
+    font-size: 18px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+  }
+  .profit-summary .ps-label{ font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  .profit-summary .ps-item.editable{ cursor:pointer; }
+  .principal-edit{
+    display:flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .principal-edit input{
+    flex:1;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 10px 12px;
+    direction: ltr;
+    text-align: left;
+  }
+  .principal-edit button{
+    background: var(--surface-2);
+    color: var(--text);
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 0 14px;
+    cursor:pointer;
+  }
+  .add-profit{
+    display:flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .add-profit input{
+    flex:1;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 11px 12px;
+  }
+  .add-profit input::placeholder{ color: var(--text-muted); }
+  .add-profit input:focus{ outline:none; border-color: var(--profit); }
+  .add-profit button{
+    background: var(--profit);
+    color: #241D08;
+    border:none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 0 16px;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .profit-list{ list-style:none; margin:0; padding:0; }
+  .profit-list li{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .profit-list li:last-child{ border-bottom:none; }
+  .pl-left{ display:flex; flex-direction:column; gap:2px; }
+  .pl-date{ color: var(--text-muted); font-size: 11px; }
+  .pl-amount{ color: var(--profit); font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr; }
+  .pl-right{ display:flex; align-items:center; gap: 10px; }
+  .pl-running{ font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; direction: ltr; }
+  .pl-del{
+    border:none; background:none; color: var(--text-muted);
+    font-size: 16px; cursor:pointer; padding: 4px 6px; line-height:1;
+  }
+  .pl-del:hover{ color: var(--danger); }
+
+  /* ---- thmar investment tab ---- */
+  .thmar-hero{
+    display:flex;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow:hidden;
+    margin-bottom: 14px;
+  }
+  .thmar-hero .th-item{ flex:1; text-align:center; padding: 14px 6px; }
+  .thmar-hero .th-item + .th-item{ border-right: 1px solid var(--line); }
+  .thmar-hero .th-num{ font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr; color: var(--thmar); }
+  .thmar-hero .th-label{ font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+  .thmar-form{
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 26px;
+  }
+  .thmar-form-row{ display:flex; gap: 8px; margin-bottom: 8px; }
+  .thmar-form-row:last-of-type{ margin-bottom: 0; }
+  .thmar-form label{ font-size: 11px; color: var(--text-muted); display:block; margin-bottom:4px; }
+  .thmar-form-field{ flex:1; }
+  .thmar-form input{
+    width:100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 11px 12px;
+  }
+  .thmar-form input::placeholder{ color: var(--text-muted); }
+  .thmar-form input:focus{ outline:none; border-color: var(--thmar); }
+  .thmar-form button{
+    width:100%;
+    background: var(--thmar);
+    color: #0C2320;
+    border:none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 11px;
+    cursor:pointer;
+    margin-top: 10px;
+  }
+
+  .thmar-report{
+    border-bottom: 1px solid var(--line);
+    padding: 16px 0;
+  }
+  .thmar-report:last-child{ border-bottom:none; }
+  .tr-title{ font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .tr-dates{ font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+  .tr-line{ font-size: 13px; margin-bottom: 6px; display:flex; justify-content:space-between; gap: 10px; }
+  .tr-line .tr-val{ font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr; flex-shrink:0; }
+  .tr-line .tr-val.up{ color: #7FD99A; }
+  .tr-line .tr-val.down{ color: var(--danger); }
+  .tr-prev{ font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .tr-del{
+    float:left;
+    border:none; background:none; color: var(--text-muted);
+    font-size: 15px; cursor:pointer; padding: 2px 6px; line-height:1;
+  }
+  .tr-del:hover{ color: var(--danger); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>نجومي</h1>
+    <span class="date" id="todayDate"></span>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-view="commute">وقت الطريق</button>
+    <button class="tab" data-view="tasks">مهام العمل</button>
+    <button class="tab" data-view="home">البيت والحياة</button>
+    <button class="tab" data-view="stamp">بصمة الدوام</button>
+    <button class="tab" data-view="weight">متابعة الوزن</button>
+    <button class="tab" data-view="profit">أرباحي</button>
+    <button class="tab" data-view="thmar">تمرة المالية</button>
+  </div>
+
+  <!-- ============ COMMUTE VIEW ============ -->
+  <section class="view active" id="view-commute">
+    <div class="pills" id="pills">
+      <button class="pill" data-dir="toWork">الذهاب للعمل</button>
+      <button class="pill" data-dir="toHome">العودة للبيت</button>
+    </div>
+
+    <div class="timer-wrap">
+      <button class="ring-btn" id="ringBtn" data-dir="toWork">
+        <span class="ring-time" id="ringTime">00:00</span>
+        <span class="ring-label" id="ringLabel">ابدأ الرحلة</span>
+      </button>
+      <button class="cancel-link" id="cancelBtn" hidden>إلغاء الرحلة</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat" data-dir="toHome">
+        <div class="num" id="avgToHome">—</div>
+        <div class="label">متوسط العودة</div>
+      </div>
+      <div class="stat" data-dir="toWork">
+        <div class="num" id="avgToWork">—</div>
+        <div class="label">متوسط الذهاب</div>
+      </div>
+    </div>
+
+    <p class="section-title">الرحلات الأخيرة</p>
+    <ul class="history" id="history"></ul>
+    <p class="empty" id="emptyMsg" hidden>ما سجلت أي رحلة بعد. ابدأ أول رحلة من الأعلى.</p>
+  </section>
+
+  <!-- ============ TASKS VIEW ============ -->
+  <section class="view" id="view-tasks">
+    <div class="add-task">
+      <input type="text" id="newTaskInput" placeholder="عنوان مهمة جديدة">
+      <button id="addTaskBtn">إضافة</button>
+    </div>
+
+    <ul class="task-list" id="taskList"></ul>
+    <p class="empty" id="taskEmptyMsg" hidden>ما عندك مهام بعد. ضيف أول مهمة من الأعلى.</p>
+  </section>
+
+  <!-- ============ HOME & LIFE VIEW ============ -->
+  <section class="view" id="view-home">
+    <div class="home-section">
+      <div class="home-section-head">
+        <p class="section-title">المهام الأسبوعية</p>
+        <span class="hint">يتجدد كل أسبوع</span>
+      </div>
+      <ul class="week-list" id="weekList"></ul>
+      <div class="add-week-task">
+        <input type="text" id="newWeekTitle" placeholder="مهمة أسبوعية جديدة">
+        <input type="number" id="newWeekTarget" min="1" max="14" value="1" title="كم مرة بالأسبوع">
+        <button id="addWeekBtn">إضافة</button>
+      </div>
+    </div>
+
+    <div class="home-section">
+      <div class="home-section-head">
+        <p class="section-title">مهام اليوم</p>
+        <span class="hint" id="homeTodayDate"></span>
+      </div>
+      <ul class="day-list" id="dayList"></ul>
+      <p class="empty" id="dayEmptyMsg" hidden>ما دوّنت شي اليوم بعد.</p>
+      <div class="add-day-task">
+        <input type="text" id="newDayTitle" placeholder="مهمة اليوم">
+        <button id="addDayBtn">إضافة</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ATTENDANCE STAMP VIEW ============ -->
+  <section class="view" id="view-stamp">
+    <div class="stamp-card" id="stampCard">
+      <button class="stamp-btn" id="stampBtn">بصمت دخول</button>
+      <div class="stamp-info" id="stampInfo"></div>
+      <button class="stamp-reset" id="stampResetBtn" hidden>تراجع عن بصمة اليوم</button>
+    </div>
+
+    <p class="stamp-note">
+      التطبيق ما يقدر يرسل لك تنبيه بعد ٨ ساعات إذا كان مسكّر — هذي قيود المتصفح. عشان التذكير يوصلك فعلياً، قول لي في المحادثة "بصمت الحين" أول ما تبصم، وبسوي لك تذكير حقيقي بجوالك بعد ٨ ساعات بالضبط.
+    </p>
+
+    <p class="section-title">سجل البصمات</p>
+    <ul class="stamp-history" id="stampHistory"></ul>
+    <p class="empty" id="stampEmptyMsg" hidden>ما فيه بصمات مسجلة بعد.</p>
+  </section>
+
+  <!-- ============ WEIGHT TRACKING VIEW ============ -->
+  <section class="view" id="view-weight">
+    <div class="weight-hero">
+      <span class="w-current" id="wCurrent">—</span><span class="w-unit">كجم</span>
+      <div class="w-sub" id="wSub"></div>
+      <div class="w-grid">
+        <div class="w-item"><div class="w-num" id="wDays">—</div><div class="w-label">يوم من البداية</div></div>
+        <div class="w-item"><div class="w-num" id="wLostTotal">—</div><div class="w-label">إجمالي الفقدان (كجم)</div></div>
+        <div class="w-item"><div class="w-num" id="wPercent">—</div><div class="w-label">نسبة الفقدان</div></div>
+      </div>
+    </div>
+
+    <div class="add-weight">
+      <div class="add-weight-row">
+        <div class="add-weight-field">
+          <label>التاريخ</label>
+          <input type="date" id="wDate">
+        </div>
+        <div class="add-weight-field">
+          <label>الجرعة (ملغ)</label>
+          <input type="text" id="wDose" placeholder="مثال: 5">
+        </div>
+      </div>
+      <div class="add-weight-row">
+        <div class="add-weight-field">
+          <label>الوزن (كجم)</label>
+          <input type="text" inputmode="decimal" id="wWeight" placeholder="مثال: 72.90">
+        </div>
+        <div class="add-weight-field">
+          <label>العضد (سم) — اختياري</label>
+          <input type="text" inputmode="decimal" id="wArm" placeholder="مثال: 34">
+        </div>
+      </div>
+      <button id="wAddBtn">إضافة قياس</button>
+    </div>
+
+    <p class="section-title">السجل</p>
+    <ul class="weight-list" id="weightList"></ul>
+  </section>
+
+  <!-- ============ PROFITS VIEW ============ -->
+  <section class="view" id="view-profit">
+    <div class="profit-section">
+      <div class="profit-head">
+        <p class="section-title">الأسهم</p>
+      </div>
+      <div class="profit-summary">
+        <div class="ps-item ps-total"><div class="ps-num" id="stocksTotal">—</div><div class="ps-label">الإجمالي الحالي</div></div>
+        <div class="ps-item"><div class="ps-num" id="stocksPrincipal">—</div><div class="ps-label">رأس المال</div></div>
+        <div class="ps-item"><div class="ps-num" id="stocksProfitSum">—</div><div class="ps-label">إجمالي الأرباح</div></div>
+      </div>
+      <div class="principal-edit">
+        <input type="text" inputmode="decimal" id="stocksPrincipalInput" placeholder="عدّل رأس المال">
+        <button data-cat="stocks" class="principal-save-btn">حفظ</button>
+      </div>
+      <div class="add-profit">
+        <input type="date" id="stocksDate">
+        <input type="text" inputmode="decimal" id="stocksAmount" placeholder="مبلغ الربح">
+        <button data-cat="stocks" class="add-profit-btn">إضافة</button>
+      </div>
+      <ul class="profit-list" id="stocksList"></ul>
+      <p class="empty" id="stocksEmptyMsg" hidden>ما سجلت أرباح أسهم بعد.</p>
+    </div>
+
+    <div class="profit-section">
+      <div class="profit-head">
+        <p class="section-title">الصكوك</p>
+      </div>
+      <div class="profit-summary">
+        <div class="ps-item ps-total"><div class="ps-num" id="sukukTotal">—</div><div class="ps-label">الإجمالي الحالي</div></div>
+        <div class="ps-item"><div class="ps-num" id="sukukPrincipal">—</div><div class="ps-label">رأس المال</div></div>
+        <div class="ps-item"><div class="ps-num" id="sukukProfitSum">—</div><div class="ps-label">إجمالي الأرباح</div></div>
+      </div>
+      <div class="principal-edit">
+        <input type="text" inputmode="decimal" id="sukukPrincipalInput" placeholder="عدّل رأس المال">
+        <button data-cat="sukuk" class="principal-save-btn">حفظ</button>
+      </div>
+      <div class="add-profit">
+        <input type="date" id="sukukDate">
+        <input type="text" inputmode="decimal" id="sukukAmount" placeholder="مبلغ الربح">
+        <button data-cat="sukuk" class="add-profit-btn">إضافة</button>
+      </div>
+      <ul class="profit-list" id="sukukList"></ul>
+      <p class="empty" id="sukukEmptyMsg" hidden>ما سجلت أرباح صكوك بعد.</p>
+    </div>
+  </section>
+
+  <!-- ============ THMAR INVESTMENT VIEW ============ -->
+  <section class="view" id="view-thmar">
+    <div class="thmar-hero">
+      <div class="th-item"><div class="th-num" id="thPrincipal">—</div><div class="th-label">رأس المال المستثمر</div></div>
+      <div class="th-item"><div class="th-num" id="thDistTotal">—</div><div class="th-label">إجمالي التوزيعات</div></div>
+      <div class="th-item"><div class="th-num" id="thMonthNum">—</div><div class="th-label">الشهر الحالي</div></div>
+    </div>
+
+    <div class="thmar-form">
+      <div class="thmar-form-row">
+        <div class="thmar-form-field">
+          <label>رأس المال المستثمر</label>
+          <input type="text" inputmode="decimal" id="thPrincipalInput" placeholder="مثال: 224000">
+        </div>
+        <div class="thmar-form-field">
+          <label>بداية الاستثمار</label>
+          <input type="date" id="thStartDate">
+        </div>
+      </div>
+      <div class="thmar-form-row">
+        <div class="thmar-form-field">
+          <label>تاريخ التقرير</label>
+          <input type="date" id="thReportDate">
+        </div>
+        <div class="thmar-form-field">
+          <label>التوزيع الدوري لهذا الشهر</label>
+          <input type="text" inputmode="decimal" id="thDist" placeholder="مثال: 74.25">
+        </div>
+      </div>
+      <div class="thmar-form-row">
+        <div class="thmar-form-field">
+          <label>تغيّر المحفظة (سالب = انخفاض)</label>
+          <input type="text" inputmode="decimal" id="thChange" placeholder="مثال: 7896.03 أو -500">
+        </div>
+      </div>
+      <button id="thAddBtn">تسجيل تقرير الشهر</button>
+    </div>
+
+    <p class="section-title">التقارير الشهرية</p>
+    <div id="thReports"></div>
+    <p class="empty" id="thEmptyMsg" hidden>ما سجلت أي تقرير شهري بعد.</p>
+  </section>
+</div>
+
+<script>
+(function(){
+  /* ============================================================
+     storage layer — persists on this device via localStorage, so
+     the app keeps your data whether it's opened from Claude or
+     saved/opened standalone (Safari, Chrome, Add to Home Screen).
+     falls back to in-memory storage if localStorage is blocked
+     (e.g. inside a restricted preview), so the app never crashes.
+  ============================================================ */
+  window.storage = (function(){
+    const PREFIX = 'najoomy:';
+    let memoryFallback = null;
+    function mem(){
+      if (!memoryFallback) memoryFallback = new Map();
+      return memoryFallback;
+    }
+    function canUseLocalStorage(){
+      try {
+        const t = '__najoomy_test__';
+        localStorage.setItem(t, '1');
+        localStorage.removeItem(t);
+        return true;
+      } catch(e) { return false; }
+    }
+    const useLocal = canUseLocalStorage();
+
+    return {
+      async get(key){
+        const full = PREFIX + key;
+        const raw = useLocal ? localStorage.getItem(full) : (mem().has(full) ? mem().get(full) : null);
+        if (raw === null || raw === undefined) throw new Error('key not found: ' + key);
+        return { key, value: raw, shared: false };
+      },
+      async set(key, value){
+        const full = PREFIX + key;
+        if (useLocal) localStorage.setItem(full, value); else mem().set(full, value);
+        return { key, value, shared: false };
+      },
+      async delete(key){
+        const full = PREFIX + key;
+        if (useLocal) localStorage.removeItem(full); else mem().delete(full);
+        return { key, deleted: true, shared: false };
+      },
+      async list(prefix){
+        const keys = [];
+        if (useLocal){
+          for (let i = 0; i < localStorage.length; i++){
+            const k = localStorage.key(i);
+            if (k && k.startsWith(PREFIX)){
+              const short = k.slice(PREFIX.length);
+              if (!prefix || short.startsWith(prefix)) keys.push(short);
+            }
+          }
+        } else {
+          for (const k of mem().keys()){
+            const short = k.slice(PREFIX.length);
+            if (!prefix || short.startsWith(prefix)) keys.push(short);
+          }
+        }
+        return { keys, prefix, shared: false };
+      }
+    };
+  })();
+
+  /* ============================================================
+     shared helpers
+  ============================================================ */
+  function fmtDuration(ms){
+    const totalMin = Math.round(ms / 60000);
+    if (totalMin < 60) return `${totalMin} د`;
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return m ? `${h} س ${m} د` : `${h} س`;
+  }
+  function fmtWhen(ts){
+    return new Intl.DateTimeFormat('ar', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(ts));
+  }
+
+  document.getElementById('todayDate').textContent =
+    new Intl.DateTimeFormat('ar', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+
+  /* ============================================================
+     tabs
+  ============================================================ */
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('view-' + tab.dataset.view).classList.add('active');
+    });
+  });
+
+  /* ============================================================
+     COMMUTE
+  ============================================================ */
+  (function commute(){
+    const DIR_LABEL = { toWork: 'الذهاب للعمل', toHome: 'العودة للبيت' };
+    const STORAGE_TRIPS = 'commute:trips';
+    const STORAGE_ACTIVE = 'commute:active';
+
+    let trips = [];
+    let active = null;
+    let selectedDirection = 'toWork';
+    let tickHandle = null;
+
+    const pillsEl = document.getElementById('pills');
+    const ringBtn = document.getElementById('ringBtn');
+    const ringTime = document.getElementById('ringTime');
+    const ringLabel = document.getElementById('ringLabel');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const historyEl = document.getElementById('history');
+    const emptyMsg = document.getElementById('emptyMsg');
+    const avgToWorkEl = document.getElementById('avgToWork');
+    const avgToHomeEl = document.getElementById('avgToHome');
+
+    function fmtClock(ms){
+      const totalSec = Math.max(0, Math.floor(ms / 1000));
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      const pad = n => String(n).padStart(2, '0');
+      return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+    }
+
+    async function loadInitial(){
+      try {
+        const res = await window.storage.get(STORAGE_TRIPS);
+        trips = res ? JSON.parse(res.value) : [];
+      } catch(e) { trips = []; }
+      try {
+        const res = await window.storage.get(STORAGE_ACTIVE);
+        active = res ? JSON.parse(res.value) : null;
+      } catch(e) { active = null; }
+      if (active) selectedDirection = active.direction;
+      render();
+      if (active) startTicking();
+    }
+
+    async function saveTrips(){
+      try { await window.storage.set(STORAGE_TRIPS, JSON.stringify(trips)); }
+      catch(e) { console.error('تعذر حفظ الرحلات', e); }
+    }
+    async function saveActive(){
+      try {
+        if (active) await window.storage.set(STORAGE_ACTIVE, JSON.stringify(active));
+        else await window.storage.delete(STORAGE_ACTIVE);
+      } catch(e) { console.error('تعذر حفظ الرحلة الحالية', e); }
+    }
+
+    function selectDirection(dir){
+      if (active) return;
+      selectedDirection = dir;
+      render();
+    }
+
+    async function toggleTrip(){
+      if (!active){
+        active = { direction: selectedDirection, startTime: Date.now() };
+        await saveActive();
+        startTicking();
+        render();
+      } else {
+        const endTime = Date.now();
+        const record = {
+          id: endTime,
+          direction: active.direction,
+          startTime: active.startTime,
+          endTime,
+          duration: endTime - active.startTime
+        };
+        trips.unshift(record);
+        stopTicking();
+        active = null;
+        await Promise.all([saveTrips(), saveActive()]);
+        render();
+      }
+    }
+
+    async function cancelTrip(){
+      if (!active) return;
+      stopTicking();
+      active = null;
+      await saveActive();
+      render();
+    }
+
+    async function deleteTrip(id){
+      trips = trips.filter(t => t.id !== id);
+      await saveTrips();
+      render();
+    }
+
+    function startTicking(){
+      stopTicking();
+      tickHandle = setInterval(() => {
+        ringTime.textContent = fmtClock(Date.now() - active.startTime);
+      }, 1000);
+    }
+    function stopTicking(){
+      if (tickHandle) clearInterval(tickHandle);
+      tickHandle = null;
+    }
+
+    function render(){
+      pillsEl.querySelectorAll('.pill').forEach(btn => {
+        const dir = btn.dataset.dir;
+        btn.classList.toggle('active', dir === selectedDirection);
+        btn.disabled = !!active;
+      });
+
+      ringBtn.dataset.dir = active ? active.direction : selectedDirection;
+      ringBtn.classList.toggle('running', !!active);
+      cancelBtn.hidden = !active;
+
+      if (active){
+        ringTime.textContent = fmtClock(Date.now() - active.startTime);
+        ringLabel.textContent = 'إنهاء الرحلة';
+      } else {
+        ringTime.textContent = '00:00';
+        ringLabel.textContent = 'ابدأ الرحلة';
+      }
+
+      historyEl.innerHTML = '';
+      emptyMsg.hidden = trips.length > 0;
+      trips.slice(0, 20).forEach(t => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="h-left">
+            <span class="h-dot" data-dir="${t.direction}"></span>
+            <span class="h-text">
+              <div class="h-dir">${DIR_LABEL[t.direction]}</div>
+              <div class="h-date">${fmtWhen(t.startTime)}</div>
+            </span>
+          </span>
+          <span class="h-right">
+            <span class="h-dur">${fmtDuration(t.duration)}</span>
+            <button class="h-del" aria-label="حذف" data-id="${t.id}">×</button>
+          </span>
+        `;
+        historyEl.appendChild(li);
+      });
+
+      const avg = dir => {
+        const list = trips.filter(t => t.direction === dir);
+        if (!list.length) return '—';
+        const mean = list.reduce((s, t) => s + t.duration, 0) / list.length;
+        return fmtDuration(mean);
+      };
+      avgToWorkEl.textContent = avg('toWork');
+      avgToHomeEl.textContent = avg('toHome');
+    }
+
+    pillsEl.addEventListener('click', e => {
+      const btn = e.target.closest('.pill');
+      if (btn) selectDirection(btn.dataset.dir);
+    });
+    ringBtn.addEventListener('click', toggleTrip);
+    cancelBtn.addEventListener('click', cancelTrip);
+    historyEl.addEventListener('click', e => {
+      const btn = e.target.closest('.h-del');
+      if (btn) deleteTrip(Number(btn.dataset.id));
+    });
+
+    loadInitial();
+  })();
+
+  /* ============================================================
+     TASKS
+     time is intentionally never shown while a task is running —
+     only a quiet pulsing dot. the duration only appears after
+     the task is marked finished.
+  ============================================================ */
+  (function tasks(){
+    const STORAGE_TASKS = 'tasks:list';
+    let items = [];
+
+    const listEl = document.getElementById('taskList');
+    const emptyEl = document.getElementById('taskEmptyMsg');
+    const inputEl = document.getElementById('newTaskInput');
+    const addBtn = document.getElementById('addTaskBtn');
+
+    async function load(){
+      try {
+        const res = await window.storage.get(STORAGE_TASKS);
+        items = res ? JSON.parse(res.value) : [];
+      } catch(e) { items = []; }
+      render();
+    }
+    async function save(){
+      try { await window.storage.set(STORAGE_TASKS, JSON.stringify(items)); }
+      catch(e) { console.error('تعذر حفظ المهام', e); }
+    }
+
+    async function addTask(){
+      const title = inputEl.value.trim();
+      if (!title) return;
+      items.unshift({
+        id: Date.now(),
+        title,
+        answer: '',
+        status: 'idle', // idle | running | done
+        startTime: null,
+        duration: null
+      });
+      inputEl.value = '';
+      await save();
+      render();
+    }
+
+    async function startTask(id){
+      const t = items.find(x => x.id === id);
+      if (!t) return;
+      t.status = 'running';
+      t.startTime = Date.now();
+      await save();
+      render();
+    }
+
+    async function finishTask(id){
+      const t = items.find(x => x.id === id);
+      if (!t) return;
+      t.status = 'done';
+      t.duration = Date.now() - t.startTime;
+      await save();
+      render();
+    }
+
+    async function deleteTask(id){
+      items = items.filter(x => x.id !== id);
+      await save();
+      render();
+    }
+
+    let answerSaveTimers = {};
+    function onAnswerInput(id, value){
+      const t = items.find(x => x.id === id);
+      if (!t) return;
+      t.answer = value;
+      clearTimeout(answerSaveTimers[id]);
+      answerSaveTimers[id] = setTimeout(save, 500);
+    }
+
+    function render(){
+      listEl.innerHTML = '';
+      emptyEl.hidden = items.length > 0;
+
+      items.forEach(t => {
+        const li = document.createElement('li');
+        li.className = 'task' + (t.status === 'running' ? ' running' : '') + (t.status === 'done' ? ' done' : '');
+
+        let metaHtml = '';
+        if (t.status === 'running'){
+          metaHtml = `<div class="task-meta"><span class="pulse-dot"></span><span>جارٍ العمل عليها الآن</span></div>`;
+        } else if (t.status === 'done'){
+          metaHtml = `<div class="task-meta"><span>استغرقت</span> <span class="task-duration">${fmtDuration(t.duration)}</span></div>`;
+        }
+
+        let actionHtml = '';
+        if (t.status === 'idle'){
+          actionHtml = `<button class="task-btn start" data-action="start" data-id="${t.id}">ابدأ</button>`;
+        } else if (t.status === 'running'){
+          actionHtml = `<button class="task-btn finish" data-action="finish" data-id="${t.id}">انتهيت</button>`;
+        } else {
+          actionHtml = `<span class="task-btn done-badge">✓ منتهية</span>`;
+        }
+
+        li.innerHTML = `
+          <div class="task-top">
+            <div class="task-title">${t.title}</div>
+            <button class="task-del" aria-label="حذف" data-id="${t.id}">×</button>
+          </div>
+          ${metaHtml}
+          <textarea class="task-answer" placeholder="إجابتي على هذي المهمة..." data-id="${t.id}">${t.answer || ''}</textarea>
+          <div class="task-actions">${actionHtml}</div>
+        `;
+        listEl.appendChild(li);
+      });
+    }
+
+    addBtn.addEventListener('click', addTask);
+    inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+
+    listEl.addEventListener('click', e => {
+      const startBtn = e.target.closest('[data-action="start"]');
+      const finishBtn = e.target.closest('[data-action="finish"]');
+      const delBtn = e.target.closest('.task-del');
+      if (startBtn) startTask(Number(startBtn.dataset.id));
+      else if (finishBtn) finishTask(Number(finishBtn.dataset.id));
+      else if (delBtn) deleteTask(Number(delBtn.dataset.id));
+    });
+
+    listEl.addEventListener('input', e => {
+      const ta = e.target.closest('.task-answer');
+      if (ta) onAnswerInput(Number(ta.dataset.id), ta.value);
+    });
+
+    load();
+  })();
+
+  /* ============================================================
+     HOME & LIFE — weekly fixed chores + freeform daily list
+  ============================================================ */
+  (function home(){
+    const STORAGE_WEEK_TASKS = 'home:weeklyTasks';
+    const STORAGE_WEEK_PROGRESS = 'home:weekProgress';
+    const STORAGE_DAY_TASKS = 'home:dailyTasks';
+    const WEEKDAYS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
+    const DEFAULT_WEEK_TASKS = [
+      { id: 1, title: 'غسيل العبايات', target: 1, note: '' },
+      { id: 2, title: 'كوي العبايات', target: 1, note: '' },
+      { id: 3, title: 'غسيل الملابس', target: 1, note: '' },
+      { id: 4, title: 'رياضة', target: 3, note: '' },
+      { id: 5, title: 'مونجارو', target: 1, note: 'كل ' + WEEKDAYS[2] },
+      { id: 6, title: 'فيتامين د', target: 1, note: 'كل ' + WEEKDAYS[1] }
+    ];
+
+    let weekTasks = [];
+    let weekKey = '';
+    let progress = {};
+    let dayTasks = [];
+
+    const weekListEl = document.getElementById('weekList');
+    const dayListEl = document.getElementById('dayList');
+    const dayEmptyEl = document.getElementById('dayEmptyMsg');
+
+    function todayKey(){
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    function currentWeekKey(){
+      const d = new Date();
+      const sunday = new Date(d);
+      sunday.setDate(d.getDate() - d.getDay());
+      return sunday.getFullYear() + '-' + String(sunday.getMonth()+1).padStart(2,'0') + '-' + String(sunday.getDate()).padStart(2,'0');
+    }
+
+    async function loadWeekTasks(){
+      try {
+        const res = await window.storage.get(STORAGE_WEEK_TASKS);
+        weekTasks = res ? JSON.parse(res.value) : DEFAULT_WEEK_TASKS;
+        if (!res) await window.storage.set(STORAGE_WEEK_TASKS, JSON.stringify(weekTasks));
+      } catch(e) { weekTasks = DEFAULT_WEEK_TASKS; }
+    }
+    async function saveWeekTasks(){
+      try { await window.storage.set(STORAGE_WEEK_TASKS, JSON.stringify(weekTasks)); }
+      catch(e) { console.error('تعذر حفظ المهام الأسبوعية', e); }
+    }
+
+    async function loadProgress(){
+      const thisWeek = currentWeekKey();
+      try {
+        const res = await window.storage.get(STORAGE_WEEK_PROGRESS);
+        const stored = res ? JSON.parse(res.value) : null;
+        if (stored && stored.weekKey === thisWeek){
+          weekKey = stored.weekKey;
+          progress = stored.progress || {};
+        } else {
+          weekKey = thisWeek;
+          progress = {};
+          await saveProgress();
+        }
+      } catch(e) {
+        weekKey = thisWeek;
+        progress = {};
+      }
+    }
+    async function saveProgress(){
+      try { await window.storage.set(STORAGE_WEEK_PROGRESS, JSON.stringify({ weekKey, progress })); }
+      catch(e) { console.error('تعذر حفظ تقدم الأسبوع', e); }
+    }
+
+    async function bumpTask(taskId, target){
+      const cur = progress[taskId] || 0;
+      progress[taskId] = cur >= target ? 0 : cur + 1;
+      await saveProgress();
+      renderWeek();
+    }
+
+    function renderWeek(){
+      weekListEl.innerHTML = '';
+      weekTasks.forEach(t => {
+        const count = progress[t.id] || 0;
+        const complete = count >= t.target;
+        const li = document.createElement('li');
+        li.className = 'week-row' + (complete ? ' complete' : '');
+        const control = t.target > 1
+          ? `<button class="week-count${complete ? ' complete' : ''}" data-id="${t.id}" data-target="${t.target}">${count}/${t.target}</button>`
+          : `<button class="week-check${complete ? ' complete' : ''}" data-id="${t.id}" data-target="${t.target}">${complete ? '✓' : ''}</button>`;
+        li.innerHTML = `
+          <span class="week-row-left">
+            <span class="week-row-title">${t.title}</span>
+            ${t.note ? `<span class="week-row-note">${t.note}</span>` : ''}
+          </span>
+          ${control}
+        `;
+        weekListEl.appendChild(li);
+      });
+    }
+
+    async function addWeekTask(){
+      const titleEl = document.getElementById('newWeekTitle');
+      const targetEl = document.getElementById('newWeekTarget');
+      const title = titleEl.value.trim();
+      const target = Math.max(1, Math.min(14, parseInt(targetEl.value, 10) || 1));
+      if (!title) return;
+      weekTasks.push({ id: Date.now(), title, target, note: '' });
+      titleEl.value = '';
+      targetEl.value = 1;
+      await saveWeekTasks();
+      renderWeek();
+    }
+
+    async function loadDayTasks(){
+      try {
+        const res = await window.storage.get(STORAGE_DAY_TASKS);
+        dayTasks = res ? JSON.parse(res.value) : [];
+      } catch(e) { dayTasks = []; }
+    }
+    async function saveDayTasks(){
+      try { await window.storage.set(STORAGE_DAY_TASKS, JSON.stringify(dayTasks)); }
+      catch(e) { console.error('تعذر حفظ مهام اليوم', e); }
+    }
+
+    async function addDayTask(){
+      const inputEl = document.getElementById('newDayTitle');
+      const title = inputEl.value.trim();
+      if (!title) return;
+      dayTasks.unshift({ id: Date.now(), date: todayKey(), title, done: false });
+      inputEl.value = '';
+      await saveDayTasks();
+      renderDay();
+    }
+
+    async function toggleDayTask(id){
+      const t = dayTasks.find(x => x.id === id);
+      if (!t) return;
+      t.done = !t.done;
+      await saveDayTasks();
+      renderDay();
+    }
+
+    async function deleteDayTask(id){
+      dayTasks = dayTasks.filter(x => x.id !== id);
+      await saveDayTasks();
+      renderDay();
+    }
+
+    function renderDay(){
+      const today = todayKey();
+      const todays = dayTasks.filter(t => t.date === today);
+      dayListEl.innerHTML = '';
+      dayEmptyEl.hidden = todays.length > 0;
+      todays.forEach(t => {
+        const li = document.createElement('li');
+        li.className = 'day-row' + (t.done ? ' done' : '');
+        li.innerHTML = `
+          <button class="day-check${t.done ? ' done' : ''}" data-id="${t.id}">${t.done ? '✓' : ''}</button>
+          <span class="day-title">${t.title}</span>
+          <button class="day-del" aria-label="حذف" data-id="${t.id}">×</button>
+        `;
+        dayListEl.appendChild(li);
+      });
+    }
+
+    document.getElementById('homeTodayDate').textContent =
+      new Intl.DateTimeFormat('ar', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+
+    document.getElementById('addWeekBtn').addEventListener('click', addWeekTask);
+    document.getElementById('newWeekTitle').addEventListener('keydown', e => { if (e.key === 'Enter') addWeekTask(); });
+
+    weekListEl.addEventListener('click', e => {
+      const btn = e.target.closest('.week-check, .week-count');
+      if (btn) bumpTask(Number(btn.dataset.id), Number(btn.dataset.target));
+    });
+
+    document.getElementById('addDayBtn').addEventListener('click', addDayTask);
+    document.getElementById('newDayTitle').addEventListener('keydown', e => { if (e.key === 'Enter') addDayTask(); });
+
+    dayListEl.addEventListener('click', e => {
+      const check = e.target.closest('.day-check');
+      const del = e.target.closest('.day-del');
+      if (check) toggleDayTask(Number(check.dataset.id));
+      else if (del) deleteDayTask(Number(del.dataset.id));
+    });
+
+    (async function init(){
+      await loadWeekTasks();
+      await loadProgress();
+      renderWeek();
+      await loadDayTasks();
+      renderDay();
+    })();
+  })();
+
+  /* ============================================================
+     ATTENDANCE STAMP
+     logs clock-in time and shows the expected 8-hour checkout time.
+     real push reminders happen via chat (see stamp-note), since a
+     closed browser tab cannot fire a notification 8 hours later.
+  ============================================================ */
+  (function stamp(){
+    const STORAGE_LOG = 'stamp:log';
+    const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
+
+    let log = [];
+
+    const btn = document.getElementById('stampBtn');
+    const card = document.getElementById('stampCard');
+    const info = document.getElementById('stampInfo');
+    const resetBtn = document.getElementById('stampResetBtn');
+    const historyEl = document.getElementById('stampHistory');
+    const emptyEl = document.getElementById('stampEmptyMsg');
+
+    function todayKey(){
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    function fmtTime(ts){
+      return new Intl.DateTimeFormat('ar', { hour: '2-digit', minute: '2-digit' }).format(new Date(ts));
+    }
+    function fmtDate(ts){
+      return new Intl.DateTimeFormat('ar', { day: 'numeric', month: 'short' }).format(new Date(ts));
+    }
+
+    async function load(){
+      try {
+        const res = await window.storage.get(STORAGE_LOG);
+        log = res ? JSON.parse(res.value) : [];
+      } catch(e) { log = []; }
+      render();
+    }
+    async function save(){
+      try { await window.storage.set(STORAGE_LOG, JSON.stringify(log)); }
+      catch(e) { console.error('تعذر حفظ سجل البصمات', e); }
+    }
+
+    function todayEntry(){
+      return log.find(e => e.date === todayKey());
+    }
+
+    async function clockIn(){
+      if (todayEntry()) return;
+      const clockInTime = Date.now();
+      log.unshift({ date: todayKey(), clockInTime, expectedOut: clockInTime + EIGHT_HOURS_MS });
+      await save();
+      render();
+    }
+
+    async function undoToday(){
+      log = log.filter(e => e.date !== todayKey());
+      await save();
+      render();
+    }
+
+    function render(){
+      const entry = todayEntry();
+      if (entry){
+        card.classList.add('active');
+        btn.classList.add('done');
+        btn.textContent = 'بصمت اليوم ✓';
+        btn.disabled = true;
+        info.innerHTML = `دخلت الساعة <b>${fmtTime(entry.clockInTime)}</b><br>متوقع وقت الخروج <b>${fmtTime(entry.expectedOut)}</b>`;
+        resetBtn.hidden = false;
+      } else {
+        card.classList.remove('active');
+        btn.classList.remove('done');
+        btn.textContent = 'بصمت دخول';
+        btn.disabled = false;
+        info.textContent = '';
+        resetBtn.hidden = true;
+      }
+
+      historyEl.innerHTML = '';
+      emptyEl.hidden = log.length > 0;
+      log.slice(0, 14).forEach(e => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="sh-date">${fmtDate(e.clockInTime)}</span>
+          <span class="sh-times">${fmtTime(e.clockInTime)} → ${fmtTime(e.expectedOut)}</span>
+        `;
+        historyEl.appendChild(li);
+      });
+    }
+
+    btn.addEventListener('click', clockIn);
+    resetBtn.addEventListener('click', undoToday);
+
+    load();
+  })();
+
+  /* ============================================================
+     WEIGHT TRACKING (Mounjaro journey)
+     every new entry auto-computes: days since start, total lost
+     since start, change since the previous measurement, and
+     percent lost relative to the starting weight.
+  ============================================================ */
+  (function weight(){
+    const STORAGE_ENTRIES = 'weight:entries';
+
+    const DEFAULT_ENTRIES = [
+      { id: 1, date: '2026-07-26', dose: '2.5', weightVal: 78.95, arm: null, note: '' },
+      { id: 2, date: '2026-08-02', dose: '2.5', weightVal: 77.55, arm: null, note: '' },
+      { id: 3, date: '2026-08-11', dose: '2.5', weightVal: 76.55, arm: null, note: '' },
+      { id: 4, date: '2026-08-18', dose: '5',   weightVal: 76.05, arm: null, note: '' },
+      { id: 5, date: '2026-08-25', dose: '5',   weightVal: 75.70, arm: 35,   note: 'ملاحظتك: تقرير الشهر الأول — نزول 3.25 كجم (4.1% من الوزن)' },
+      { id: 6, date: '2026-09-01', dose: '5',   weightVal: 74.55, arm: null, note: '' },
+      { id: 7, date: '2026-09-08', dose: '5',   weightVal: 73.40, arm: null, note: '' }
+    ];
+
+    let entries = [];
+
+    const heroCurrent = document.getElementById('wCurrent');
+    const heroSub = document.getElementById('wSub');
+    const heroDays = document.getElementById('wDays');
+    const heroLost = document.getElementById('wLostTotal');
+    const heroPercent = document.getElementById('wPercent');
+    const listEl = document.getElementById('weightList');
+    const dateInput = document.getElementById('wDate');
+    const doseInput = document.getElementById('wDose');
+    const weightInput = document.getElementById('wWeight');
+    const armInput = document.getElementById('wArm');
+
+    dateInput.value = new Date().toISOString().slice(0,10);
+
+    function fmtNum(n, digits){
+      return n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    }
+    function fmtDateAr(dateStr){
+      return new Intl.DateTimeFormat('ar', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(dateStr + 'T00:00:00'));
+    }
+    function dayDiff(a, b){
+      return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+    }
+
+    async function load(){
+      try {
+        const res = await window.storage.get(STORAGE_ENTRIES);
+        entries = res ? JSON.parse(res.value) : DEFAULT_ENTRIES;
+        if (!res) await window.storage.set(STORAGE_ENTRIES, JSON.stringify(entries));
+      } catch(e) { entries = DEFAULT_ENTRIES; }
+      render();
+    }
+    async function save(){
+      try { await window.storage.set(STORAGE_ENTRIES, JSON.stringify(entries)); }
+      catch(e) { console.error('تعذر حفظ سجل الوزن', e); }
+    }
+
+    async function addEntry(){
+      const date = dateInput.value;
+      const weightVal = parseFloat(weightInput.value);
+      if (!date || isNaN(weightVal)) return;
+      const dose = doseInput.value.trim();
+      const armVal = armInput.value.trim() ? parseFloat(armInput.value) : null;
+      entries.push({ id: Date.now(), date, dose, weightVal, arm: armVal, note: '' });
+      doseInput.value = '';
+      weightInput.value = '';
+      armInput.value = '';
+      await save();
+      render();
+    }
+
+    async function deleteEntry(id){
+      entries = entries.filter(e => e.id !== id);
+      await save();
+      render();
+    }
+
+    function render(){
+      const sorted = [...entries].sort((a,b) => a.date.localeCompare(b.date));
+      listEl.innerHTML = '';
+
+      if (!sorted.length){
+        heroCurrent.textContent = '—';
+        heroSub.textContent = 'ضيف أول قياس تبدأ فيه المتابعة';
+        heroDays.textContent = '—';
+        heroLost.textContent = '—';
+        heroPercent.textContent = '—';
+        return;
+      }
+
+      const start = sorted[0];
+      const latest = sorted[sorted.length - 1];
+      const totalLost = start.weightVal - latest.weightVal;
+      const totalDays = dayDiff(start.date, latest.date);
+      const percent = (totalLost / start.weightVal) * 100;
+
+      heroCurrent.textContent = fmtNum(latest.weightVal, 2);
+      heroSub.textContent = `من ${fmtNum(start.weightVal,2)} كجم بتاريخ ${fmtDateAr(start.date)}`;
+      heroDays.textContent = totalDays;
+      heroLost.textContent = (totalLost >= 0 ? '-' : '+') + fmtNum(Math.abs(totalLost), 2);
+      heroPercent.textContent = (percent >= 0 ? '-' : '+') + fmtNum(Math.abs(percent), 1) + '%';
+
+      // most recent first
+      for (let i = sorted.length - 1; i >= 0; i--){
+        const e = sorted[i];
+        const daysSinceStart = dayDiff(start.date, e.date);
+        const lostFromStart = start.weightVal - e.weightVal;
+        const pctFromStart = (lostFromStart / start.weightVal) * 100;
+
+        let sinceLastHtml = '';
+        if (i > 0){
+          const prev = sorted[i-1];
+          const daysSinceLast = dayDiff(prev.date, e.date);
+          const lostSinceLast = prev.weightVal - e.weightVal;
+          sinceLastHtml = `<span>منذ آخر قياس (${daysSinceLast} يوم): <b>${lostSinceLast >= 0 ? '-' : '+'}${fmtNum(Math.abs(lostSinceLast),2)} كجم</b></span>`;
+        } else {
+          sinceLastHtml = `<span>بداية المتابعة</span>`;
+        }
+
+        const li = document.createElement('li');
+        li.className = 'weight-entry';
+        li.innerHTML = `
+          <div class="we-top">
+            <span class="we-date">${fmtDateAr(e.date)}</span>
+            <span style="display:flex; align-items:center; gap:8px;">
+              <span class="we-weight">${fmtNum(e.weightVal,2)} كجم</span>
+              <button class="we-del" aria-label="حذف" data-id="${e.id}">×</button>
+            </span>
+          </div>
+          <div class="we-badges">
+            ${e.dose ? `<span class="we-badge">جرعة ${e.dose} ملغ</span>` : ''}
+            ${e.arm ? `<span class="we-badge">العضد ${fmtNum(e.arm,0)} سم</span>` : ''}
+          </div>
+          <div class="we-stats">
+            <span>من البداية: <b>${daysSinceStart} يوم</b></span>
+            <span>الفقدان الكلي: <b>${lostFromStart >= 0 ? '-' : '+'}${fmtNum(Math.abs(lostFromStart),2)} كجم</b></span>
+            <span>نسبة الفقدان: <b>${pctFromStart >= 0 ? '-' : '+'}${fmtNum(Math.abs(pctFromStart),1)}%</b></span>
+            ${sinceLastHtml}
+          </div>
+          ${e.note ? `<div class="we-note">${e.note}</div>` : ''}
+        `;
+        listEl.appendChild(li);
+      }
+    }
+
+    document.getElementById('wAddBtn').addEventListener('click', addEntry);
+    listEl.addEventListener('click', e => {
+      const btn = e.target.closest('.we-del');
+      if (btn) deleteEntry(Number(btn.dataset.id));
+    });
+
+    load();
+  })();
+
+  /* ============================================================
+     PROFITS — stocks & sukuk
+     each logged profit is added on top of the principal
+     automatically; the "current total" always reflects
+     principal + sum of all logged profits.
+  ============================================================ */
+  (function profits(){
+    const CATEGORIES = ['stocks', 'sukuk'];
+    const state = {}; // { stocks: {principal, entries}, sukuk: {...} }
+
+    function storageKey(cat){ return 'profit:' + cat; }
+
+    function fmtMoney(n){
+      const sign = n < 0 ? '-' : '';
+      return sign + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function fmtDateAr(dateStr){
+      return new Intl.DateTimeFormat('ar', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(dateStr + 'T00:00:00'));
+    }
+
+    async function loadCat(cat){
+      try {
+        const res = await window.storage.get(storageKey(cat));
+        state[cat] = res ? JSON.parse(res.value) : { principal: 0, entries: [] };
+      } catch(e) { state[cat] = { principal: 0, entries: [] }; }
+    }
+    async function saveCat(cat){
+      try { await window.storage.set(storageKey(cat), JSON.stringify(state[cat])); }
+      catch(e) { console.error('تعذر حفظ بيانات ' + cat, e); }
+    }
+
+    async function savePrincipal(cat){
+      const input = document.getElementById(cat + 'PrincipalInput');
+      const val = parseFloat(input.value);
+      if (isNaN(val)) return;
+      state[cat].principal = val;
+      input.value = '';
+      await saveCat(cat);
+      render(cat);
+    }
+
+    async function addProfit(cat){
+      const dateInput = document.getElementById(cat + 'Date');
+      const amountInput = document.getElementById(cat + 'Amount');
+      const date = dateInput.value || new Date().toISOString().slice(0,10);
+      const amount = parseFloat(amountInput.value);
+      if (isNaN(amount)) return;
+      state[cat].entries.push({ id: Date.now(), date, amount });
+      amountInput.value = '';
+      await saveCat(cat);
+      render(cat);
+    }
+
+    async function deleteProfit(cat, id){
+      state[cat].entries = state[cat].entries.filter(e => e.id !== id);
+      await saveCat(cat);
+      render(cat);
+    }
+
+    function render(cat){
+      const data = state[cat];
+      const sorted = [...data.entries].sort((a,b) => a.date.localeCompare(b.date) || a.id - b.id);
+      const profitSum = sorted.reduce((s,e) => s + e.amount, 0);
+      const total = data.principal + profitSum;
+
+      document.getElementById(cat + 'Total').textContent = fmtMoney(total);
+      document.getElementById(cat + 'Principal').textContent = fmtMoney(data.principal);
+      document.getElementById(cat + 'ProfitSum').textContent = fmtMoney(profitSum);
+
+      const listEl = document.getElementById(cat + 'List');
+      const emptyEl = document.getElementById(cat + 'EmptyMsg');
+      listEl.innerHTML = '';
+      emptyEl.hidden = sorted.length > 0;
+
+      let running = data.principal;
+      const rows = sorted.map(e => {
+        running += e.amount;
+        return { ...e, runningAfter: running };
+      }).reverse();
+
+      rows.forEach(e => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="pl-left">
+            <span class="pl-amount">+${fmtMoney(e.amount)}</span>
+            <span class="pl-date">${fmtDateAr(e.date)}</span>
+          </span>
+          <span class="pl-right">
+            <span class="pl-running">المجموع بعدها: ${fmtMoney(e.runningAfter)}</span>
+            <button class="pl-del" aria-label="حذف" data-cat="${cat}" data-id="${e.id}">×</button>
+          </span>
+        `;
+        listEl.appendChild(li);
+      });
+    }
+
+    document.querySelectorAll('.principal-save-btn').forEach(btn => {
+      btn.addEventListener('click', () => savePrincipal(btn.dataset.cat));
+    });
+    document.querySelectorAll('.add-profit-btn').forEach(btn => {
+      btn.addEventListener('click', () => addProfit(btn.dataset.cat));
+      const cat = btn.dataset.cat;
+      document.getElementById(cat + 'Amount').addEventListener('keydown', e => { if (e.key === 'Enter') addProfit(cat); });
+    });
+    document.querySelectorAll('.profit-list').forEach(list => {
+      list.addEventListener('click', e => {
+        const btn = e.target.closest('.pl-del');
+        if (btn) deleteProfit(btn.dataset.cat, Number(btn.dataset.id));
+      });
+    });
+
+    (async function init(){
+      const today = new Date().toISOString().slice(0,10);
+      CATEGORIES.forEach(cat => { document.getElementById(cat + 'Date').value = today; });
+      for (const cat of CATEGORIES){
+        await loadCat(cat);
+        render(cat);
+      }
+    })();
+  })();
+
+  /* ============================================================
+     THMAR — monthly investment report
+     entered on the 7th of each month; month number since start,
+     cumulative periodic distributions, and comparison to last
+     month's portfolio change are all computed automatically.
+  ============================================================ */
+  (function thmar(){
+    const STORAGE_KEY = 'thmar:data';
+    const DEFAULT_DATA = { principal: 224000, startDate: '2025-11-07', entries: [] };
+
+    let data = DEFAULT_DATA;
+
+    const principalEl = document.getElementById('thPrincipal');
+    const distTotalEl = document.getElementById('thDistTotal');
+    const monthNumEl = document.getElementById('thMonthNum');
+    const principalInput = document.getElementById('thPrincipalInput');
+    const startDateInput = document.getElementById('thStartDate');
+    const reportDateInput = document.getElementById('thReportDate');
+    const distInput = document.getElementById('thDist');
+    const changeInput = document.getElementById('thChange');
+    const reportsEl = document.getElementById('thReports');
+    const emptyEl = document.getElementById('thEmptyMsg');
+
+    function fmtMoney(n){
+      const sign = n < 0 ? '-' : '';
+      return sign + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function fmtDateSlash(dateStr){
+      const [y,m,d] = dateStr.split('-');
+      return `${parseInt(d,10)}/${parseInt(m,10)}/${y}`;
+    }
+    function fmtMonthYearAr(dateStr){
+      return new Intl.DateTimeFormat('ar', { month: 'long', year: 'numeric' }).format(new Date(dateStr + 'T00:00:00'));
+    }
+    function monthNumber(startStr, dateStr){
+      const [sy, sm] = startStr.split('-').map(Number);
+      const [ey, em] = dateStr.split('-').map(Number);
+      return (ey - sy) * 12 + (em - sm);
+    }
+
+    async function load(){
+      try {
+        const res = await window.storage.get(STORAGE_KEY);
+        data = res ? JSON.parse(res.value) : DEFAULT_DATA;
+        if (!res) await window.storage.set(STORAGE_KEY, JSON.stringify(data));
+      } catch(e) { data = DEFAULT_DATA; }
+      const today = new Date();
+      const defaultReportDate = new Date(today.getFullYear(), today.getMonth(), 7).toISOString().slice(0,10);
+      reportDateInput.value = defaultReportDate;
+      startDateInput.value = data.startDate;
+      render();
+    }
+    async function save(){
+      try { await window.storage.set(STORAGE_KEY, JSON.stringify(data)); }
+      catch(e) { console.error('تعذر حفظ بيانات تمرة', e); }
+    }
+
+    async function savePrincipalAndStart(){
+      const p = parseFloat(principalInput.value);
+      if (!isNaN(p)) data.principal = p;
+      if (startDateInput.value) data.startDate = startDateInput.value;
+      principalInput.value = '';
+      await save();
+      render();
+    }
+
+    async function addReport(){
+      const date = reportDateInput.value;
+      const dist = parseFloat(distInput.value);
+      const change = parseFloat(changeInput.value);
+      if (!date || isNaN(dist) || isNaN(change)) return;
+      data.entries.push({ id: Date.now(), date, dist, change });
+      distInput.value = '';
+      changeInput.value = '';
+      await save();
+      render();
+    }
+
+    async function deleteReport(id){
+      data.entries = data.entries.filter(e => e.id !== id);
+      await save();
+      render();
+    }
+
+    function render(){
+      const sorted = [...data.entries].sort((a,b) => a.date.localeCompare(b.date) || a.id - b.id);
+      const distTotal = sorted.reduce((s,e) => s + e.dist, 0);
+      const latest = sorted[sorted.length - 1];
+
+      principalEl.textContent = fmtMoney(data.principal);
+      distTotalEl.textContent = fmtMoney(distTotal);
+      monthNumEl.textContent = latest ? monthNumber(data.startDate, latest.date) : '—';
+
+      reportsEl.innerHTML = '';
+      emptyEl.hidden = sorted.length > 0;
+
+      let cumulative = 0;
+      const withCumulative = sorted.map(e => { cumulative += e.dist; return { ...e, cumDist: cumulative }; });
+
+      for (let i = withCumulative.length - 1; i >= 0; i--){
+        const e = withCumulative[i];
+        const mNum = monthNumber(data.startDate, e.date);
+        const changeUp = e.change >= 0;
+        let prevHtml = '';
+        if (i > 0){
+          const prev = withCumulative[i-1];
+          const prevUp = prev.change >= 0;
+          prevHtml = `<div class="tr-prev">الشهر الماضي كان ${prevUp ? 'الارتفاع' : 'الانخفاض'} ${fmtMoney(Math.abs(prev.change))} ريال</div>`;
+        }
+        const div = document.createElement('div');
+        div.className = 'thmar-report';
+        div.innerHTML = `
+          <button class="tr-del" aria-label="حذف" data-id="${e.id}">×</button>
+          <div class="tr-title">نتائج الشهر ${mNum} من الاستثمار</div>
+          <div class="tr-dates">بداية الاستثمار: ${fmtDateSlash(data.startDate)} — تاريخ التقرير: ${fmtDateSlash(e.date)}</div>
+          <div class="tr-line"><span>التوزيع الدوري لشهر ${fmtMonthYearAr(e.date)}</span><span class="tr-val">${fmtMoney(e.dist)} ريال</span></div>
+          <div class="tr-line"><span>مجموع التوزيعات الدورية لـ ${i+1} ${i+1===1?'شهر':'أشهر'}</span><span class="tr-val">${fmtMoney(e.cumDist)} ريال</span></div>
+          <div class="tr-line"><span>تغيرات المحفظة</span><span class="tr-val ${changeUp ? 'up' : 'down'}">${changeUp ? 'ارتفاع' : 'انخفاض'} ${fmtMoney(Math.abs(e.change))} ريال</span></div>
+          ${prevHtml}
+        `;
+        reportsEl.appendChild(div);
+      }
+    }
+
+    document.getElementById('thAddBtn').addEventListener('click', addReport);
+    reportsEl.addEventListener('click', e => {
+      const btn = e.target.closest('.tr-del');
+      if (btn) deleteReport(Number(btn.dataset.id));
+    });
+    principalInput.addEventListener('keydown', e => { if (e.key === 'Enter') savePrincipalAndStart(); });
+    startDateInput.addEventListener('change', savePrincipalAndStart);
+    principalInput.addEventListener('blur', () => { if (principalInput.value) savePrincipalAndStart(); });
+
+    load();
+  })();
+})();
+</script>
+</body>
+</html>
