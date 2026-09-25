@@ -37,6 +37,10 @@
     --profit-dim: #3A2F10;
     --thmar: #4FB0A6;
     --thmar-dim: #163531;
+    --mprofit: #E08E45;
+    --mprofit-dim: #3A2A14;
+    --wealth: #C9A85C;
+    --wealth-dim: #35301A;
     --danger: #E0708A;
   }
   *{ box-sizing: border-box; }
@@ -131,6 +135,8 @@
   }
   .pill.active[data-dir="toWork"]{ background: var(--morning-dim); color: var(--morning); }
   .pill.active[data-dir="toHome"]{ background: var(--evening-dim); color: var(--evening); }
+  .pill.active[data-dir="add"]{ background: var(--thmar-dim); color: var(--thmar); }
+  .pill.active[data-dir="withdraw"]{ background: rgba(224,112,138,0.18); color: var(--danger); }
   .pill:disabled{ cursor:default; }
 
   .timer-wrap{
@@ -348,6 +354,7 @@
     margin-top: 12px;
     display:flex;
     justify-content:flex-end;
+    gap: 8px;
   }
   .task-btn{
     border: none;
@@ -538,6 +545,13 @@
     margin-bottom: 6px;
   }
   .stamp-btn.done{ background: var(--surface-2); color: var(--text-muted); }
+  .stamp-btn-out{
+    width: auto !important;
+    height: auto !important;
+    border-radius: 999px !important;
+    padding: 12px 28px;
+  }
+  .stamp-btn-out.done{ background: var(--surface-2); color: var(--text-muted); }
   .stamp-info{ font-size: 13px; color: var(--text-muted); margin-top: 10px; line-height: 1.9; }
   .stamp-info b{ color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr; display:inline-block; }
   .stamp-reset{
@@ -864,6 +878,29 @@
     font-size: 15px; cursor:pointer; padding: 2px 6px; line-height:1;
   }
   .tr-del:hover{ color: var(--danger); }
+
+  /* ---- wealth progress bar ---- */
+  .wl-progress-track{
+    height: 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    overflow:hidden;
+    margin-bottom: 26px;
+  }
+  .wl-progress-fill{
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--wealth-dim), var(--wealth));
+    width: 0%;
+    transition: width .4s ease;
+  }
+  .pl-pct{
+    font-size: 11px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+  }
 </style>
 </head>
 <body>
@@ -881,6 +918,8 @@
     <button class="tab" data-view="weight">متابعة الوزن</button>
     <button class="tab" data-view="profit">أرباحي</button>
     <button class="tab" data-view="thmar">تمرة المالية</button>
+    <button class="tab" data-view="mprofit">الأرباح الشهرية</button>
+    <button class="tab" data-view="wealth">ثروتي</button>
   </div>
 
   <!-- ============ COMMUTE VIEW ============ -->
@@ -959,6 +998,7 @@
     <div class="stamp-card" id="stampCard">
       <button class="stamp-btn" id="stampBtn">بصمة دخول</button>
       <div class="stamp-info" id="stampInfo"></div>
+      <button class="stamp-btn stamp-btn-out" id="stampOutBtn" hidden style="margin-top:14px;">بصمة خروج</button>
       <button class="stamp-reset" id="stampResetBtn" hidden>تراجع عن بصمة اليوم</button>
     </div>
 
@@ -1026,6 +1066,10 @@
         <input type="text" inputmode="decimal" id="stocksPrincipalInput" placeholder="عدّل رأس المال">
         <button data-cat="stocks" class="principal-save-btn">حفظ</button>
       </div>
+      <div class="principal-edit">
+        <input type="text" inputmode="decimal" id="stocksBaselineInput" placeholder="أرباح متراكمة قبل الآن (مرة وحدة)">
+        <button data-cat="stocks" class="baseline-save-btn">حفظ</button>
+      </div>
       <div class="add-profit">
         <input type="date" id="stocksDate">
         <input type="text" inputmode="decimal" id="stocksAmount" placeholder="مبلغ الربح">
@@ -1033,6 +1077,9 @@
       </div>
       <ul class="profit-list" id="stocksList"></ul>
       <p class="empty" id="stocksEmptyMsg" hidden>ما سجلت أرباح أسهم بعد.</p>
+
+      <p class="section-title" style="margin-top:22px;">التقرير الشهري</p>
+      <ul class="profit-list" id="stocksMonthly"></ul>
     </div>
 
     <div class="profit-section">
@@ -1048,6 +1095,10 @@
         <input type="text" inputmode="decimal" id="sukukPrincipalInput" placeholder="عدّل رأس المال">
         <button data-cat="sukuk" class="principal-save-btn">حفظ</button>
       </div>
+      <div class="principal-edit">
+        <input type="text" inputmode="decimal" id="sukukBaselineInput" placeholder="أرباح متراكمة قبل الآن (مرة وحدة)">
+        <button data-cat="sukuk" class="baseline-save-btn">حفظ</button>
+      </div>
       <div class="add-profit">
         <input type="date" id="sukukDate">
         <input type="text" inputmode="decimal" id="sukukAmount" placeholder="مبلغ الربح">
@@ -1055,6 +1106,9 @@
       </div>
       <ul class="profit-list" id="sukukList"></ul>
       <p class="empty" id="sukukEmptyMsg" hidden>ما سجلت أرباح صكوك بعد.</p>
+
+      <p class="section-title" style="margin-top:22px;">التقرير الشهري</p>
+      <ul class="profit-list" id="sukukMonthly"></ul>
     </div>
   </section>
 
@@ -1067,14 +1121,18 @@
     </div>
 
     <div class="thmar-form">
-      <p class="section-title" style="margin-bottom:10px;">إضافة مبلغ جديد لرأس المال</p>
+      <p class="section-title" style="margin-bottom:10px;">تعديل رأس المال</p>
+      <div class="pills" id="thDirPills" style="margin-bottom:14px;">
+        <button type="button" class="pill th-dir-pill active" data-dir="add">إضافة مبلغ</button>
+        <button type="button" class="pill th-dir-pill" data-dir="withdraw">سحب من المحفظة</button>
+      </div>
       <div class="thmar-form-row">
         <div class="thmar-form-field">
-          <label>تاريخ الإضافة</label>
+          <label>التاريخ</label>
           <input type="date" id="thAddDate">
         </div>
         <div class="thmar-form-field">
-          <label>المبلغ المضاف</label>
+          <label id="thAddAmountLabel">المبلغ المضاف</label>
           <input type="text" inputmode="decimal" id="thAddAmount" placeholder="مثال: 10000">
         </div>
       </div>
@@ -1123,6 +1181,69 @@
       </div>
       <button id="thSaveSettingsBtn">حفظ الإعدادات الأولية</button>
     </div>
+  </section>
+
+  <!-- ============ MONTHLY TOTAL PROFITS VIEW ============ -->
+  <section class="view" id="view-mprofit">
+    <div class="thmar-hero">
+      <div class="th-item"><div class="th-num" id="mpGrandTotal">—</div><div class="th-label">إجمالي كل الأرباح</div></div>
+      <div class="th-item"><div class="th-num" id="mpAvg">—</div><div class="th-label">متوسط الشهر</div></div>
+      <div class="th-item"><div class="th-num" id="mpMonthCount">—</div><div class="th-label">عدد الأشهر</div></div>
+    </div>
+    <p class="stamp-note" style="margin-bottom:22px;">
+      يجمع تلقائياً أرباح الأسهم والصكوك المسجلة هذا الشهر مع التوزيع الدوري لتمرة. الأشهر القديمة اللي ما فيها تفاصيل مسجلة بالتطبيق تقدر تدخل مجموعها يدوياً تحت.
+    </p>
+
+    <div class="thmar-form">
+      <p class="section-title" style="margin-bottom:10px;">إدخال / تعديل مجموع شهر يدوياً</p>
+      <div class="thmar-form-row">
+        <div class="thmar-form-field">
+          <label>رقم الشهر (من بداية تمرة)</label>
+          <input type="text" inputmode="numeric" id="mpMonthInput" placeholder="مثال: 11">
+        </div>
+        <div class="thmar-form-field">
+          <label>إجمالي أرباح الشهر</label>
+          <input type="text" inputmode="decimal" id="mpAmountInput" placeholder="مثال: 1500">
+        </div>
+      </div>
+      <button id="mpSaveBtn">حفظ الشهر</button>
+    </div>
+
+    <p class="section-title">الأشهر</p>
+    <ul class="profit-list" id="mpList"></ul>
+    <p class="empty" id="mpEmptyMsg" hidden>ما فيه أرباح شهرية مسجلة بعد.</p>
+  </section>
+
+  <!-- ============ TOTAL WEALTH VIEW ============ -->
+  <section class="view" id="view-wealth">
+    <div class="thmar-hero">
+      <div class="th-item"><div class="th-num" id="wlTotal">—</div><div class="th-label">إجمالي الثروة</div></div>
+      <div class="th-item"><div class="th-num" id="wlRemaining">—</div><div class="th-label">الباقي للمليون</div></div>
+      <div class="th-item"><div class="th-num" id="wlPercent">—</div><div class="th-label">نسبة الإنجاز</div></div>
+    </div>
+
+    <div class="wl-progress-track">
+      <div class="wl-progress-fill" id="wlProgressFill"></div>
+    </div>
+
+    <div class="thmar-form">
+      <p class="section-title" style="margin-bottom:10px;">إضافة مصدر ثروة</p>
+      <div class="thmar-form-row">
+        <div class="thmar-form-field">
+          <label>اسم المصدر</label>
+          <input type="text" id="wlNameInput" placeholder="مثال: تمرة، الأسهم، كاش">
+        </div>
+        <div class="thmar-form-field">
+          <label>القيمة الحالية</label>
+          <input type="text" inputmode="decimal" id="wlAmountInput" placeholder="مثال: 300000">
+        </div>
+      </div>
+      <button id="wlAddBtn">إضافة المصدر</button>
+    </div>
+
+    <p class="section-title">مصادر الثروة</p>
+    <ul class="profit-list" id="wlList"></ul>
+    <p class="empty" id="wlEmptyMsg" hidden>ما ضفت أي مصدر ثروة بعد.</p>
   </section>
 </div>
 
@@ -1436,8 +1557,9 @@
         id: Date.now(),
         title,
         answer: '',
-        status: 'idle', // idle | running | done
+        status: 'idle', // idle | running | paused | done
         startTime: null,
+        accumulated: 0,
         duration: null
       });
       inputEl.value = '';
@@ -1450,6 +1572,26 @@
       if (!t) return;
       t.status = 'running';
       t.startTime = Date.now();
+      t.accumulated = 0;
+      await save();
+      render();
+    }
+
+    async function pauseTask(id){
+      const t = items.find(x => x.id === id);
+      if (!t) return;
+      t.accumulated = (t.accumulated || 0) + (Date.now() - t.startTime);
+      t.startTime = null;
+      t.status = 'paused';
+      await save();
+      render();
+    }
+
+    async function resumeTask(id){
+      const t = items.find(x => x.id === id);
+      if (!t) return;
+      t.status = 'running';
+      t.startTime = Date.now();
       await save();
       render();
     }
@@ -1457,8 +1599,10 @@
     async function finishTask(id){
       const t = items.find(x => x.id === id);
       if (!t) return;
+      const running = t.status === 'running' ? (Date.now() - t.startTime) : 0;
       t.status = 'done';
-      t.duration = Date.now() - t.startTime;
+      t.duration = (t.accumulated || 0) + running;
+      t.startTime = null;
       await save();
       render();
     }
@@ -1489,6 +1633,8 @@
         let metaHtml = '';
         if (t.status === 'running'){
           metaHtml = `<div class="task-meta"><span class="pulse-dot"></span><span>جارٍ العمل عليها الآن</span></div>`;
+        } else if (t.status === 'paused'){
+          metaHtml = `<div class="task-meta"><span>⏸</span><span>متوقفة مؤقتاً</span></div>`;
         } else if (t.status === 'done'){
           metaHtml = `<div class="task-meta"><span>استغرقت</span> <span class="task-duration">${fmtDuration(t.duration)}</span></div>`;
         }
@@ -1497,7 +1643,15 @@
         if (t.status === 'idle'){
           actionHtml = `<button class="task-btn start" data-action="start" data-id="${t.id}">ابدأ</button>`;
         } else if (t.status === 'running'){
-          actionHtml = `<button class="task-btn finish" data-action="finish" data-id="${t.id}">انتهيت</button>`;
+          actionHtml = `
+            <button class="task-btn start" data-action="pause" data-id="${t.id}">إيقاف مؤقت</button>
+            <button class="task-btn finish" data-action="finish" data-id="${t.id}">انتهيت</button>
+          `;
+        } else if (t.status === 'paused'){
+          actionHtml = `
+            <button class="task-btn start" data-action="resume" data-id="${t.id}">استئناف</button>
+            <button class="task-btn finish" data-action="finish" data-id="${t.id}">انتهيت</button>
+          `;
         } else {
           actionHtml = `<span class="task-btn done-badge">✓ منتهية</span>`;
         }
@@ -1520,9 +1674,13 @@
 
     listEl.addEventListener('click', e => {
       const startBtn = e.target.closest('[data-action="start"]');
+      const pauseBtn = e.target.closest('[data-action="pause"]');
+      const resumeBtn = e.target.closest('[data-action="resume"]');
       const finishBtn = e.target.closest('[data-action="finish"]');
       const delBtn = e.target.closest('.task-del');
       if (startBtn) startTask(Number(startBtn.dataset.id));
+      else if (pauseBtn) pauseTask(Number(pauseBtn.dataset.id));
+      else if (resumeBtn) resumeTask(Number(resumeBtn.dataset.id));
       else if (finishBtn) finishTask(Number(finishBtn.dataset.id));
       else if (delBtn) deleteTask(Number(delBtn.dataset.id));
     });
@@ -1744,6 +1902,7 @@
     let log = [];
 
     const btn = document.getElementById('stampBtn');
+    const outBtn = document.getElementById('stampOutBtn');
     const card = document.getElementById('stampCard');
     const info = document.getElementById('stampInfo');
     const resetBtn = document.getElementById('stampResetBtn');
@@ -1780,7 +1939,15 @@
     async function clockIn(){
       if (todayEntry()) return;
       const clockInTime = Date.now();
-      log.unshift({ date: todayKey(), clockInTime, expectedOut: clockInTime + EIGHT_HOURS_MS });
+      log.unshift({ date: todayKey(), clockInTime, expectedOut: clockInTime + EIGHT_HOURS_MS, clockOutTime: null });
+      await save();
+      render();
+    }
+
+    async function clockOut(){
+      const entry = todayEntry();
+      if (!entry || entry.clockOutTime) return;
+      entry.clockOutTime = Date.now();
       await save();
       render();
     }
@@ -1800,6 +1967,17 @@
         btn.disabled = true;
         info.innerHTML = `دخلت الساعة <b>${fmtTime(entry.clockInTime)}</b><br>متوقع وقت الخروج <b>${fmtTime(entry.expectedOut)}</b>`;
         resetBtn.hidden = false;
+
+        outBtn.hidden = false;
+        if (entry.clockOutTime){
+          outBtn.classList.add('done');
+          outBtn.textContent = `بصمت الخروج الساعة ${fmtTime(entry.clockOutTime)} ✓`;
+          outBtn.disabled = true;
+        } else {
+          outBtn.classList.remove('done');
+          outBtn.textContent = 'بصمة خروج';
+          outBtn.disabled = false;
+        }
       } else {
         card.classList.remove('active');
         btn.classList.remove('done');
@@ -1807,21 +1985,24 @@
         btn.disabled = false;
         info.textContent = '';
         resetBtn.hidden = true;
+        outBtn.hidden = true;
       }
 
       historyEl.innerHTML = '';
       emptyEl.hidden = log.length > 0;
       log.slice(0, 14).forEach(e => {
         const li = document.createElement('li');
+        const outText = e.clockOutTime ? fmtTime(e.clockOutTime) : `${fmtTime(e.expectedOut)} (متوقع)`;
         li.innerHTML = `
           <span class="sh-date">${fmtDate(e.clockInTime)}</span>
-          <span class="sh-times">${fmtTime(e.clockInTime)} → ${fmtTime(e.expectedOut)}</span>
+          <span class="sh-times">${fmtTime(e.clockInTime)} → ${outText}</span>
         `;
         historyEl.appendChild(li);
       });
     }
 
     btn.addEventListener('click', clockIn);
+    outBtn.addEventListener('click', clockOut);
     resetBtn.addEventListener('click', undoToday);
 
     load();
@@ -1989,7 +2170,7 @@
   ============================================================ */
   (function profits(){
     const CATEGORIES = ['stocks', 'sukuk'];
-    const state = {}; // { stocks: {principal, entries}, sukuk: {...} }
+    const state = {}; // { stocks: {principal, baseline, entries}, sukuk: {...} }
 
     function storageKey(cat){ return 'profit:' + cat; }
 
@@ -2000,12 +2181,17 @@
     function fmtDateAr(dateStr){
       return new Intl.DateTimeFormat('ar', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(dateStr + 'T00:00:00'));
     }
+    function fmtMonthYearAr(monthKey){
+      const [y,m] = monthKey.split('-').map(Number);
+      return new Intl.DateTimeFormat('ar', { month: 'long', year: 'numeric' }).format(new Date(y, m-1, 1));
+    }
 
     async function loadCat(cat){
       try {
         const res = await window.storage.get(storageKey(cat));
-        state[cat] = res ? JSON.parse(res.value) : { principal: 0, entries: [] };
-      } catch(e) { state[cat] = { principal: 0, entries: [] }; }
+        state[cat] = res ? JSON.parse(res.value) : { principal: 0, baseline: 0, entries: [] };
+        if (state[cat].baseline === undefined) state[cat].baseline = 0;
+      } catch(e) { state[cat] = { principal: 0, baseline: 0, entries: [] }; }
     }
     async function saveCat(cat){
       try { await window.storage.set(storageKey(cat), JSON.stringify(state[cat])); }
@@ -2017,6 +2203,16 @@
       const val = parseFloat(input.value);
       if (isNaN(val)) return;
       state[cat].principal = val;
+      input.value = '';
+      await saveCat(cat);
+      render(cat);
+    }
+
+    async function saveBaseline(cat){
+      const input = document.getElementById(cat + 'BaselineInput');
+      const val = parseFloat(input.value);
+      if (isNaN(val)) return;
+      state[cat].baseline = val;
       input.value = '';
       await saveCat(cat);
       render(cat);
@@ -2043,7 +2239,8 @@
     function render(cat){
       const data = state[cat];
       const sorted = [...data.entries].sort((a,b) => a.date.localeCompare(b.date) || a.id - b.id);
-      const profitSum = sorted.reduce((s,e) => s + e.amount, 0);
+      const entriesSum = sorted.reduce((s,e) => s + e.amount, 0);
+      const profitSum = (data.baseline || 0) + entriesSum;
       const total = data.principal + profitSum;
 
       document.getElementById(cat + 'Total').textContent = fmtMoney(total);
@@ -2055,7 +2252,7 @@
       listEl.innerHTML = '';
       emptyEl.hidden = sorted.length > 0;
 
-      let running = data.principal;
+      let running = data.baseline || 0;
       const rows = sorted.map(e => {
         running += e.amount;
         return { ...e, runningAfter: running };
@@ -2069,16 +2266,44 @@
             <span class="pl-date">${fmtDateAr(e.date)}</span>
           </span>
           <span class="pl-right">
-            <span class="pl-running">المجموع بعدها: ${fmtMoney(e.runningAfter)}</span>
+            <span class="pl-running">إجمالي الأرباح بعدها: ${fmtMoney(e.runningAfter)}</span>
             <button class="pl-del" aria-label="حذف" data-cat="${cat}" data-id="${e.id}">×</button>
           </span>
         `;
         listEl.appendChild(li);
       });
+
+      // monthly report: group entries by calendar month
+      const byMonth = {};
+      sorted.forEach(e => {
+        const key = e.date.slice(0,7); // YYYY-MM
+        byMonth[key] = (byMonth[key] || 0) + e.amount;
+      });
+      const monthKeys = Object.keys(byMonth).sort().reverse();
+      const monthlyEl = document.getElementById(cat + 'Monthly');
+      monthlyEl.innerHTML = '';
+      if (!monthKeys.length){
+        monthlyEl.innerHTML = `<li style="justify-content:center; color:var(--text-muted);">ما فيه أرباح مسجلة بأشهر محددة بعد.</li>`;
+      }
+      monthKeys.forEach(key => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="pl-left">
+            <span class="pl-date">${fmtMonthYearAr(key)}</span>
+          </span>
+          <span class="pl-right">
+            <span class="pl-amount">${fmtMoney(byMonth[key])}</span>
+          </span>
+        `;
+        monthlyEl.appendChild(li);
+      });
     }
 
     document.querySelectorAll('.principal-save-btn').forEach(btn => {
       btn.addEventListener('click', () => savePrincipal(btn.dataset.cat));
+    });
+    document.querySelectorAll('.baseline-save-btn').forEach(btn => {
+      btn.addEventListener('click', () => saveBaseline(btn.dataset.cat));
     });
     document.querySelectorAll('.add-profit-btn').forEach(btn => {
       btn.addEventListener('click', () => addProfit(btn.dataset.cat));
@@ -2121,6 +2346,10 @@
     const startDateInput = document.getElementById('thStartDate');
     const addDateInput = document.getElementById('thAddDate');
     const addAmountInput = document.getElementById('thAddAmount');
+    const addAmountLabel = document.getElementById('thAddAmountLabel');
+    const addBtn2 = document.getElementById('thAddCapitalBtn');
+    const dirPillsEl = document.getElementById('thDirPills');
+    let contribDirection = 'add';
     const contribListEl = document.getElementById('thContribList');
     const contribEmptyEl = document.getElementById('thContribEmptyMsg');
     const reportDateInput = document.getElementById('thReportDate');
@@ -2178,13 +2407,33 @@
 
     async function addContribution(){
       const date = addDateInput.value || new Date().toISOString().slice(0,10);
-      const amount = parseFloat(addAmountInput.value);
+      let amount = parseFloat(addAmountInput.value);
       if (isNaN(amount)) return;
+      amount = Math.abs(amount);
+      if (contribDirection === 'withdraw') amount = -amount;
       data.contributions.push({ id: Date.now(), date, amount });
       addAmountInput.value = '';
       await save();
       render();
     }
+
+    function setDirection(dir){
+      contribDirection = dir;
+      dirPillsEl.querySelectorAll('.th-dir-pill').forEach(b => b.classList.toggle('active', b.dataset.dir === dir));
+      if (dir === 'withdraw'){
+        addAmountLabel.textContent = 'المبلغ المسحوب';
+        addAmountInput.placeholder = 'مثال: 5000';
+        addBtn2.textContent = 'سحب من المحفظة';
+      } else {
+        addAmountLabel.textContent = 'المبلغ المضاف';
+        addAmountInput.placeholder = 'مثال: 10000';
+        addBtn2.textContent = 'إضافة للمحفظة';
+      }
+    }
+    dirPillsEl.addEventListener('click', e => {
+      const btn = e.target.closest('.th-dir-pill');
+      if (btn) setDirection(btn.dataset.dir);
+    });
 
     async function deleteContribution(id){
       data.contributions = data.contributions.filter(c => c.id !== id);
@@ -2220,9 +2469,12 @@
 
       rows.forEach(c => {
         const li = document.createElement('li');
+        const isWithdraw = c.amount < 0;
+        const sign = isWithdraw ? '-' : '+';
+        const color = isWithdraw ? 'var(--danger)' : 'var(--thmar)';
         li.innerHTML = `
           <span class="pl-left">
-            <span class="pl-amount" style="color:var(--thmar);">+${fmtMoney(c.amount)}</span>
+            <span class="pl-amount" style="color:${color};">${sign}${fmtMoney(Math.abs(c.amount))}</span>
             <span class="pl-date">${fmtDateSlash(c.date)}</span>
           </span>
           <span class="pl-right">
@@ -2289,6 +2541,234 @@
     });
 
     document.getElementById('thSaveSettingsBtn').addEventListener('click', saveInitialSettings);
+
+    load();
+  })();
+
+  /* ============================================================
+     MONTHLY TOTAL PROFITS
+     combines stock profits + sukuk profits + Thmar's periodic
+     distribution, grouped by Thmar's month numbering (month 1 =
+     first full month after Thmar's start date). Months with no
+     live entries fall back to a manually entered total.
+  ============================================================ */
+  (function monthlyProfits(){
+    const STORAGE_OVERRIDES = 'monthlyProfits:overrides';
+    const DEFAULT_OVERRIDES = { 2: 775, 3: 1582, 4: 1923, 5: 2102, 6: 735, 7: 1263, 8: 1345 };
+
+    let overrides = {};
+
+    const listEl = document.getElementById('mpList');
+    const emptyEl = document.getElementById('mpEmptyMsg');
+    const monthInput = document.getElementById('mpMonthInput');
+    const amountInput = document.getElementById('mpAmountInput');
+    const grandTotalEl = document.getElementById('mpGrandTotal');
+    const avgEl = document.getElementById('mpAvg');
+    const countEl = document.getElementById('mpMonthCount');
+
+    function fmtMoney(n){
+      const sign = n < 0 ? '-' : '';
+      return sign + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function monthIndexOf(dateStr, sy, sm){
+      const [ey, em] = dateStr.split('-').map(Number);
+      return (ey - sy) * 12 + (em - sm);
+    }
+
+    async function loadOverrides(){
+      try {
+        const res = await window.storage.get(STORAGE_OVERRIDES);
+        overrides = res ? JSON.parse(res.value) : { ...DEFAULT_OVERRIDES };
+        if (!res) await window.storage.set(STORAGE_OVERRIDES, JSON.stringify(overrides));
+      } catch(e) { overrides = { ...DEFAULT_OVERRIDES }; }
+    }
+    async function saveOverrides(){
+      try { await window.storage.set(STORAGE_OVERRIDES, JSON.stringify(overrides)); }
+      catch(e) { console.error('تعذر حفظ الأرباح الشهرية', e); }
+    }
+
+    async function saveMonthOverride(){
+      const month = parseInt(monthInput.value, 10);
+      const amount = parseFloat(amountInput.value);
+      if (isNaN(month) || isNaN(amount)) return;
+      overrides[month] = amount;
+      monthInput.value = '';
+      amountInput.value = '';
+      await saveOverrides();
+      await render();
+    }
+
+    async function deleteMonthOverride(month){
+      delete overrides[month];
+      await saveOverrides();
+      await render();
+    }
+
+    async function getLiveTotals(){
+      let sy = 2025, sm = 11;
+      try {
+        const thRes = await window.storage.get('thmar:data');
+        if (thRes){
+          const th = JSON.parse(thRes.value);
+          [sy, sm] = th.startDate.split('-').map(Number);
+        }
+      } catch(e) {}
+
+      const totals = {};
+      function addAmount(dateStr, amount){
+        const idx = monthIndexOf(dateStr, sy, sm);
+        totals[idx] = (totals[idx] || 0) + amount;
+      }
+
+      try {
+        const res = await window.storage.get('profit:stocks');
+        if (res){ const d = JSON.parse(res.value); (d.entries||[]).forEach(e => addAmount(e.date, e.amount)); }
+      } catch(e) {}
+      try {
+        const res = await window.storage.get('profit:sukuk');
+        if (res){ const d = JSON.parse(res.value); (d.entries||[]).forEach(e => addAmount(e.date, e.amount)); }
+      } catch(e) {}
+      try {
+        const res = await window.storage.get('thmar:data');
+        if (res){ const d = JSON.parse(res.value); (d.entries||[]).forEach(e => addAmount(e.date, e.dist)); }
+      } catch(e) {}
+
+      return totals;
+    }
+
+    async function render(){
+      const live = await getLiveTotals();
+      const allMonths = new Set([...Object.keys(live).map(Number), ...Object.keys(overrides).map(Number)]);
+      const months = [...allMonths].sort((a,b) => b - a);
+
+      listEl.innerHTML = '';
+      emptyEl.hidden = months.length > 0;
+
+      let grandTotal = 0;
+      months.forEach(m => {
+        const isLive = live[m] !== undefined && live[m] !== 0;
+        const value = isLive ? live[m] : (overrides[m] !== undefined ? overrides[m] : 0);
+        grandTotal += value;
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="pl-left">
+            <span class="pl-date">شهر (${m})${isLive ? ' <span style="color:var(--mprofit);">· تلقائي</span>' : ''}</span>
+          </span>
+          <span class="pl-right">
+            <span class="pl-amount" style="color:var(--mprofit);">${fmtMoney(value)} ريال</span>
+            ${!isLive ? `<button class="pl-del" aria-label="حذف" data-month="${m}">×</button>` : ''}
+          </span>
+        `;
+        listEl.appendChild(li);
+      });
+
+      grandTotalEl.textContent = fmtMoney(grandTotal);
+      countEl.textContent = months.length;
+      avgEl.textContent = months.length ? fmtMoney(grandTotal / months.length) : '—';
+    }
+
+    document.getElementById('mpSaveBtn').addEventListener('click', saveMonthOverride);
+    listEl.addEventListener('click', e => {
+      const btn = e.target.closest('.pl-del');
+      if (btn) deleteMonthOverride(Number(btn.dataset.month));
+    });
+
+    (async function init(){
+      await loadOverrides();
+      await render();
+    })();
+  })();
+
+  /* ============================================================
+     TOTAL WEALTH
+     a simple net-worth tracker: the person lists their wealth
+     sources, and the app totals them, shows each source's share,
+     and tracks progress toward one million.
+  ============================================================ */
+  (function wealth(){
+    const STORAGE_KEY = 'wealth:sources';
+    const GOAL = 1000000;
+
+    let sources = [];
+
+    const listEl = document.getElementById('wlList');
+    const emptyEl = document.getElementById('wlEmptyMsg');
+    const nameInput = document.getElementById('wlNameInput');
+    const amountInput = document.getElementById('wlAmountInput');
+    const totalEl = document.getElementById('wlTotal');
+    const remainingEl = document.getElementById('wlRemaining');
+    const percentEl = document.getElementById('wlPercent');
+    const fillEl = document.getElementById('wlProgressFill');
+
+    function fmtMoney(n){
+      const sign = n < 0 ? '-' : '';
+      return sign + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    async function load(){
+      try {
+        const res = await window.storage.get(STORAGE_KEY);
+        sources = res ? JSON.parse(res.value) : [];
+      } catch(e) { sources = []; }
+      render();
+    }
+    async function save(){
+      try { await window.storage.set(STORAGE_KEY, JSON.stringify(sources)); }
+      catch(e) { console.error('تعذر حفظ مصادر الثروة', e); }
+    }
+
+    async function addSource(){
+      const name = nameInput.value.trim();
+      const amount = parseFloat(amountInput.value);
+      if (!name || isNaN(amount)) return;
+      sources.push({ id: Date.now(), name, amount });
+      nameInput.value = '';
+      amountInput.value = '';
+      await save();
+      render();
+    }
+
+    async function deleteSource(id){
+      sources = sources.filter(s => s.id !== id);
+      await save();
+      render();
+    }
+
+    function render(){
+      const total = sources.reduce((s,x) => s + x.amount, 0);
+      const remaining = Math.max(0, GOAL - total);
+      const pct = Math.min(100, (total / GOAL) * 100);
+
+      totalEl.textContent = fmtMoney(total);
+      remainingEl.textContent = total >= GOAL ? '🎉' : fmtMoney(remaining);
+      percentEl.textContent = fmtMoney(pct) + '%';
+      fillEl.style.width = pct + '%';
+
+      listEl.innerHTML = '';
+      emptyEl.hidden = sources.length > 0;
+
+      [...sources].sort((a,b) => b.amount - a.amount).forEach(s => {
+        const share = total > 0 ? (s.amount / total) * 100 : 0;
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="pl-left">
+            <span class="pl-date">${s.name}</span>
+            <span class="pl-pct">${fmtMoney(share)}% من الثروة</span>
+          </span>
+          <span class="pl-right">
+            <span class="pl-amount" style="color:var(--wealth);">${fmtMoney(s.amount)} ريال</span>
+            <button class="pl-del" aria-label="حذف" data-id="${s.id}">×</button>
+          </span>
+        `;
+        listEl.appendChild(li);
+      });
+    }
+
+    document.getElementById('wlAddBtn').addEventListener('click', addSource);
+    listEl.addEventListener('click', e => {
+      const btn = e.target.closest('.pl-del');
+      if (btn) deleteSource(Number(btn.dataset.id));
+    });
 
     load();
   })();
