@@ -920,6 +920,7 @@
     <button class="tab" data-view="thmar">تمرة المالية</button>
     <button class="tab" data-view="mprofit">الأرباح الشهرية</button>
     <button class="tab" data-view="wealth">ثروتي</button>
+    <button class="tab" data-view="backup">نسخة احتياطية</button>
   </div>
 
   <!-- ============ COMMUTE VIEW ============ -->
@@ -1244,6 +1245,28 @@
     <p class="section-title">مصادر الثروة</p>
     <ul class="profit-list" id="wlList"></ul>
     <p class="empty" id="wlEmptyMsg" hidden>ما ضفت أي مصدر ثروة بعد.</p>
+  </section>
+
+  <!-- ============ BACKUP VIEW ============ -->
+  <section class="view" id="view-backup">
+    <p class="stamp-note" style="margin-bottom:22px;">
+      بياناتك محفوظة على هذا الجهاز فقط، وممكن تنفقد لو حذفت التطبيق أو غيّرت جهازك. اعملي نسخة احتياطية بشكل دوري — خصوصاً قبل أي تحديث أو خطوة فيها تغيير بالتطبيق.
+    </p>
+
+    <div class="thmar-form">
+      <p class="section-title" style="margin-bottom:10px;">تصدير نسخة احتياطية</p>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">يحمّل ملف واحد فيه كل بياناتك (الرحلات، المهام، الوزن، الأرباح، تمرة، الثروة...). احفظيه بمكان آمن (الملفات، الإيميل، آي كلاود).</p>
+      <button id="backupExportBtn">تحميل نسخة احتياطية</button>
+      <p id="backupExportStatus" style="font-size:12px; color:var(--text-muted); margin-top:10px;"></p>
+    </div>
+
+    <div class="thmar-form">
+      <p class="section-title" style="margin-bottom:10px;">استعادة من نسخة احتياطية</p>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">اختاري ملف نسخة احتياطية حمّلتيه قبل. هذا يستبدل البيانات الحالية بالبيانات المحفوظة بالملف.</p>
+      <input type="file" accept="application/json,.json" id="backupImportFile" style="margin-bottom:12px; color:var(--text); font-size:13px;">
+      <button id="backupImportBtn">استعادة البيانات</button>
+      <p id="backupImportStatus" style="font-size:12px; color:var(--text-muted); margin-top:10px;"></p>
+    </div>
   </section>
 </div>
 
@@ -2771,6 +2794,75 @@
     });
 
     load();
+  })();
+
+  /* ============================================================
+     BACKUP / RESTORE
+     dumps every stored key to a downloadable JSON file, and can
+     restore from one. this is the safety net against storage
+     loss (browser data clearing, reinstalling the home-screen
+     icon, switching devices, etc.)
+  ============================================================ */
+  (function backup(){
+    const exportBtn = document.getElementById('backupExportBtn');
+    const exportStatus = document.getElementById('backupExportStatus');
+    const importBtn = document.getElementById('backupImportBtn');
+    const importFile = document.getElementById('backupImportFile');
+    const importStatus = document.getElementById('backupImportStatus');
+
+    async function exportData(){
+      try {
+        exportStatus.textContent = 'جارٍ التجهيز...';
+        const listRes = await window.storage.list();
+        const keys = (listRes && listRes.keys) || [];
+        const dump = {};
+        for (const k of keys){
+          try {
+            const r = await window.storage.get(k);
+            if (r) dump[k] = r.value;
+          } catch(e) { /* skip unreadable key */ }
+        }
+        const today = new Date().toISOString().slice(0,10);
+        const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `najoomy-backup-${today}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        exportStatus.textContent = `تم تحميل نسخة تحتوي ${keys.length} عنصر. احفظيها بمكان آمن.`;
+      } catch(e) {
+        exportStatus.textContent = 'تعذر إنشاء النسخة الاحتياطية.';
+        console.error(e);
+      }
+    }
+
+    async function importData(){
+      const file = importFile.files && importFile.files[0];
+      if (!file){
+        importStatus.textContent = 'اختاري ملف النسخة الاحتياطية أولاً.';
+        return;
+      }
+      try {
+        importStatus.textContent = 'جارٍ الاستعادة...';
+        const text = await file.text();
+        const dump = JSON.parse(text);
+        const entries = Object.entries(dump);
+        for (const [k, v] of entries){
+          await window.storage.set(k, v);
+        }
+        importStatus.textContent = `تم استعادة ${entries.length} عنصر. بيرجّع التطبيق نفسه الحين...`;
+        setTimeout(() => location.reload(), 1200);
+      } catch(e) {
+        importStatus.textContent = 'الملف غير صالح أو تعذرت الاستعادة.';
+        console.error(e);
+      }
+    }
+
+    exportBtn.addEventListener('click', exportData);
+    importBtn.addEventListener('click', importData);
   })();
 })();
 </script>
